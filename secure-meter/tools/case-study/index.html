@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meter PDF Maker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<h1>Meter PDF Maker</h1>
+<p class="sub">Upload the WhatsApp group export ZIP (with media). Each meter’s PDF starts with the Case Study front page, followed by its images. PDFs are made date-wise. Everything runs in your browser; the ZIP is never uploaded anywhere.</p>
+<label id="drop"><input type="file" id="f" accept=".zip"><b>Drop the ZIP file here or tap to choose</b><span>WhatsApp Chat with … .zip</span></label>
+<div class="files"><div><label for="f1">Tracker (built in; you can upload a newer .xlsb or .csv)</label><input type="file" id="f1" accept=".xlsb,.csv"><div class="st" id="s1"></div></div>
+<div><label for="f2">JobDataReport .csv (optional)</label><input type="file" id="f2" accept=".csv"><div class="st" id="s2">Optional</div></div></div>
+<div id="msg" role="status" aria-live="polite"></div>
+<div id="out"></div>
+</main>
+<script src="data/trk-data.js"></script>
+<script src="../../vendor/jszip.min.js"></script>
+<script src="../../vendor/jspdf.umd.min.js"></script>
+<script src="app.js"></script>
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/drive-picker.js"></script>
+</body>
+</html>

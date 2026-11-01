@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" role="img" aria-label="A smart electricity meter sending data wirelessly">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1c2d"/><stop offset=".55" stop-color="#143c61"/><stop offset="1" stop-color="#1c6a8c"/></linearGradient>
+<radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#e0902f" stop-opacity=".55"/><stop offset="1" stop-color="#e0902f" stop-opacity="0"/></radialGradient>
+<linearGradient id="amber" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6b659"/><stop offset="1" stop-color="#d9791b"/></linearGradient>
+<pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#fff" stroke-opacity=".05"/></pattern>
+</defs>
+<style>
+.pulse{animation:pulse 3s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.float{animation:float 5s ease-in-out infinite}
+.dash{stroke-dasharray:8 10;animation:dash 2.2s linear infinite}
+.spin{animation:spin 14s linear infinite}
+.blink{animation:blink 1.6s steps(2,end) infinite}
+.draw{stroke-dasharray:900;stroke-dashoffset:900;animation:draw 3.5s ease forwards}
+.rise{transform-box:fill-box;transform-origin:bottom;animation:rise 1.4s cubic-bezier(.2,.9,.3,1) both}
+@keyframes pulse{0%,100%{opacity:.35;transform:scale(.92)}50%{opacity:1;transform:scale(1.06)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes dash{to{stroke-dashoffset:-36}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{50%{opacity:.15}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes rise{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}.draw{stroke-dashoffset:0}}
+</style>
+<rect width="1200" height="400" fill="url(#bg)"/>
+<rect width="1200" height="400" fill="url(#grid)"/>
+
+<circle cx="900" cy="200" r="230" fill="url(#glow)" class="pulse"/>
+<g fill="none" stroke="#7fd1f0" stroke-width="3" stroke-linecap="round">
+ <path d="M1010 120a110 110 0 0 1 0 160" class="pulse"/><path d="M1050 90a160 160 0 0 1 0 220" class="pulse" style="animation-delay:.5s"/><path d="M1090 60a210 210 0 0 1 0 280" class="pulse" style="animation-delay:1s"/>
+</g>
+<g class="float">
+ <rect x="780" y="70" width="230" height="260" rx="26" fill="#eef3f8"/>
+ <rect x="780" y="70" width="230" height="260" rx="26" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3"/>
+ <rect x="806" y="98" width="178" height="74" rx="10" fill="#0b1c2d"/>
+ <text x="895" y="148" text-anchor="middle" font-family="Consolas,'Courier New',monospace" font-size="28" font-weight="700" fill="#5ff2b0">012345.6</text>
+ <text x="972" y="120" text-anchor="end" font-family="Arial,sans-serif" font-size="13" fill="#7fd1f0">kWh</text>
+ <circle cx="830" cy="230" r="9" fill="#e0902f" class="blink"/><circle cx="860" cy="230" r="9" fill="#5ff2b0"/><circle cx="890" cy="230" r="9" fill="#b9c6d3"/>
+ <rect x="930" y="216" width="52" height="28" rx="6" fill="#d3dde7"/>
+ <rect x="806" y="268" width="178" height="30" rx="8" fill="#d3dde7"/>
+ <path d="M820 283h60" stroke="#8aa0b5" stroke-width="4" stroke-linecap="round"/>
+</g>
+<g fill="#fff" fill-opacity=".5"><circle cx="640" cy="90" r="3"/><circle cx="700" cy="310" r="4"/><circle cx="560" cy="200" r="3"/><circle cx="740" cy="40" r="2.5"/></g>
+</svg>

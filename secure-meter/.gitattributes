@@ -1,0 +1,9 @@
+# Let Git handle line endings, but keep Windows launchers in Windows format
+* text=auto
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Do not show huge generated/library files line by line in diffs
+*.min.js -diff
+tools/case-study/data/trk-data.js -diff
+tools/agdt-letters/data/images.js -diff

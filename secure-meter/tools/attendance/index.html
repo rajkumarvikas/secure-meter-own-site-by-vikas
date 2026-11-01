@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attendance Record</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="tabs" role="tablist" aria-label="Attendance sections">
+    <button class="tab on" data-tab="daily" role="tab">Daily</button>
+    <button class="tab" data-tab="monthly" role="tab">Monthly</button>
+    <button class="tab" data-tab="employees" role="tab">Employees</button>
+    <button class="tab" data-tab="backup" role="tab">Export &amp; Backup</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- DAILY -->
+  <section class="panel" id="tab-daily">
+    <div class="bar">
+      <label class="fld">Date <input type="date" id="dDate"></label>
+      <button class="btn" id="dAllP">Mark all Present</button>
+      <button class="btn ghost" id="dClear">Clear day</button>
+      <div class="chips" id="dChips"></div>
+    </div>
+    <div class="scroll">
+      <table class="grid" id="dTable">
+        <thead><tr><th>Code</th><th>Name</th><th>Department</th><th>Status</th><th>In</th><th>Out</th><th>Remark</th></tr></thead>
+        <tbody id="dBody"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="dEmpty" hidden>No employees yet. Add them in the Employees tab.</p>
+  </section>
+
+  <!-- MONTHLY -->
+  <section class="panel" id="tab-monthly" hidden>
+    <div class="bar">
+      <label class="fld">Month <input type="month" id="mMonth"></label>
+      <button class="btn ghost" id="mSundays">Mark Sundays as Week Off</button>
+      <span class="hint">Click a cell to change its status.</span>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="scroll big">
+      <table class="grid month" id="mTable"></table>
+    </div>
+    <p class="empty" id="mEmpty" hidden>No employees yet. Add them in the Employees tab.</p>
+  </section>
+
+  <!-- EMPLOYEES -->
+  <section class="panel" id="tab-employees" hidden>
+    <div class="bar">
+      <label class="fld">Code <input id="eCode" placeholder="E001"></label>
+      <label class="fld">Name <input id="eName" placeholder="Full name"></label>
+      <label class="fld">Department <input id="eDept" placeholder="Department"></label>
+      <button class="btn" id="eAdd">Add employee</button>
+    </div>
+    <div class="bar">
+      <label class="btn ghost filebtn">Import employees (CSV)<input type="file" id="eFile" accept=".csv,.txt" hidden></label>
+      <span class="hint">CSV columns: Code, Name, Department (a header row is fine).</span>
+    </div>
+    <div class="scroll">
+      <table class="grid">
+        <thead><tr><th>Code</th><th>Name</th><th>Department</th><th></th></tr></thead>
+        <tbody id="eBody"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="eEmpty" hidden>No employees yet.</p>
+  </section>
+
+  <!-- EXPORT & BACKUP -->
+  <section class="panel" id="tab-backup" hidden>
+    <div class="cards">
+      <div class="card">
+        <h3>Export the month</h3>
+        <p>Month: <b id="bMonth"></b> (change it in the Monthly tab).</p>
+        <div class="row">
+          <button class="btn" id="xXlsx">Download Excel (.xlsx)</button>
+          <button class="btn ghost" id="xCsv">Download CSV</button>
+        </div>
+        <p class="hint">The Excel file has two sheets: the monthly grid with totals, and a day-by-day log.</p>
+      </div>
+      <div class="card">
+        <h3>Backup and restore</h3>
+        <p>Attendance is saved in this browser only. Download a backup file regularly.</p>
+        <div class="row">
+          <button class="btn" id="bSave">Download backup (.json)</button>
+          <label class="btn ghost filebtn">Restore from backup<input type="file" id="bFile" accept=".json" hidden></label>
+        </div>
+        <p class="hint">Restoring replaces everything currently saved.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="../../vendor/jszip.min.js"></script>
+<script src="xlsx-writer.js"></script>
+<script src="app.js"></script>
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/drive-picker.js"></script>
+</body>
+</html>

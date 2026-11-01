@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>1983 AGDT File Processor</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<h1>1983 AGDT File Processor</h1>
+<p class="s">Upload your files, run the process, then export the updated 1983 workbook. Everything runs in your browser and works fully offline. No file is uploaded anywhere.</p>
+
+<div class="card">
+  <div id="drop">Drag &amp; drop all your files here at once, or click to choose<input id="multi" type="file" multiple hidden></div>
+  <div id="slots"></div>
+  <p style="margin:14px 0 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <button class="p" id="go" disabled>Start processing</button>
+    <button id="reset">Reset</button>
+  </p>
+  <div id="log"></div>
+</div>
+
+<div class="card" id="res" hidden>
+  <div class="grid" id="stats"></div>
+  <p style="margin:16px 0 8px"><button class="p" id="dl">Export 1983 file (.xlsx)</button></p>
+  <p class="note" id="dlmsg"></p>
+  <p class="note">In “Old Uninv” only <b>#N/A</b> cells in AB:AI are changed. In “Rectification Plan” the columns Visited Yesterday, Cumulative Visit, Target Pending and the daily date columns are recalculated from the supervisor visits in Old Uninv. Everything else (pivots, charts, slicers, other sheets) stays as it was.</p>
+  <h3 style="margin:16px 0 6px;font-size:15px">Rectification Plan (updated from Old Uninv)</h3>
+  <p class="note" id="pnote"></p>
+  <div class="wrap"><table id="ptbl"></table></div>
+  <h3 style="margin:16px 0 6px;font-size:15px">Cells that were filled</h3>
+  <div class="wrap"><table id="tbl"></table></div>
+</div>
+</main>
+
+<script src="../../vendor/jszip.min.js"></script>
+<script src="app.js"></script>
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/drive-picker.js"></script>
+</body>
+</html>

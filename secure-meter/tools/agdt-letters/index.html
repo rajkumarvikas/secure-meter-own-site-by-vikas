@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AGDT Letter Generator (Offline)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+<h1>AGDT Letter Generator</h1>
+<p class="sub">Offline version: no internet needed. Upload the sheet, pick a meter, create the letter PDF and download the updated Excel.</p>
+
+<div class="card">
+<h2>1. Upload Excel sheet</h2>
+<input type="file" id="file" accept=".xlsx,.xlsm">
+<div class="m" id="st"></div>
+</div>
+
+<div class="card" id="f2" hidden>
+<h2>2. Letter details</h2>
+<label>Meter Serial No</label>
+<input type="text" id="mt" placeholder="X2063346" autocomplete="off">
+<div class="pv" id="pv"></div>
+<label>Outward No. series</label>
+<div class="rad">
+<label><input type="radio" name="code" value="PR"> PR (Pune)</label>
+<label><input type="radio" name="code" value="NR"> NR (Nagpur)</label>
+</div>
+<div class="g">
+<div><label>Select Site Remark</label><select id="rem"></select></div>
+<div><label>Letter Submitted TO</label><select id="to"></select></div>
+</div>
+<div class="pv" id="dt"></div>
+<button id="add">Create letter</button>
+<div class="m" id="msg"></div>
+</div>
+
+<div class="card" id="res" hidden>
+<h2>3. Ready letters</h2>
+<div class="tw"><table><thead><tr><th>Meter</th><th>Outward No.</th><th>Date</th><th>Remark</th><th>Status</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
+<button id="pall">PDF of all letters</button>
+<button id="xl" class="o">Updated Excel download</button>
+<div class="m" id="xm"></div>
+</div>
+</main>
+
+<script src="../../vendor/pdf-lib.min.js"></script>
+<script src="../../vendor/jszip.min.js"></script>
+<script src="data/images.js"></script>
+<script src="app.js"></script>
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/drive-picker.js"></script>
+</body>
+</html>
