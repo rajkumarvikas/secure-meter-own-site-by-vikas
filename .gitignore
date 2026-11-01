@@ -1,0 +1,20 @@
+# Operating system
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+
+# Files created while working (never commit these)
+*.log
+attendance-backup-*.json
+
+# Your own private settings, if you keep any
+config.local.js
+

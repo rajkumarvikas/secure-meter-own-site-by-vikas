@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Secure Meter</title>
+<link rel="stylesheet" href="assets/css/shell.css">
+<link rel="stylesheet" href="assets/css/nav.css">
+<link rel="stylesheet" href="assets/css/home.css">
+<link rel="stylesheet" href="assets/css/slider.css">
+</head>
+<body>
+
+<aside class="side">
+  <button class="brand" data-go="home" aria-label="Secure Meter home"><span class="mark" aria-hidden="true"></span><span><b>Secure Meter</b></span></button>
+  <nav class="nav" id="nav" aria-label="Tools">
+    <button class="nav-i on" data-go="home" data-nav="home"><span class="lbl">Home</span><span class="chev" aria-hidden="true">&rsaquo;</span></button>
+    <div class="nav-h">Tools</div>
+    <!-- tool buttons are added by assets/js/shell.js from assets/js/tools.js -->
+  </nav>
+  <div class="side-f">Each tool keeps its own data while you switch between them.</div>
+</aside>
+
+<div class="stage">
+  <header class="topbar">
+    <div class="tl">
+      <h2 class="ptitle" id="ptitle">Secure Meter</h2>
+    </div>
+    <!-- filled from assets/js/developer.js -->
+    <div class="who" id="who"></div>
+  </header>
+
+  <div class="views" id="views">
+    <section class="view" id="view-home" aria-label="Home">
+      <div class="home dash">
+        <header class="hero">
+          <div class="hero-t">
+            <p class="eyebrow" id="hGreet">Welcome</p>
+            <h1>Secure Meter</h1>
+            <p class="hero-sub" id="hDate"></p>
+          </div>
+        </header>
+
+        <section class="slider" id="slider" aria-label="About Secure Meters"></section>
+
+        <h2 class="h2">Your tools</h2>
+        <div class="tgrid" id="tool-list"></div>
+      </div>
+    </section>
+    <!-- one frame per tool is added by assets/js/shell.js -->
+  </div>
+</div>
+
+<script src="assets/js/developer.js"></script>
+<script src="assets/js/tools.js"></script>
+<script src="assets/js/shell.js"></script>
+<script src="assets/js/slides.js"></script>
+<script src="assets/js/slider.js"></script>
+</body>
+</html>

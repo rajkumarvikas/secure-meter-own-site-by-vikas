@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" role="img" aria-label="From an analogue dial meter to an electronic meter">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1c2d"/><stop offset=".55" stop-color="#143c61"/><stop offset="1" stop-color="#1c6a8c"/></linearGradient>
+<radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#e0902f" stop-opacity=".55"/><stop offset="1" stop-color="#e0902f" stop-opacity="0"/></radialGradient>
+<linearGradient id="amber" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6b659"/><stop offset="1" stop-color="#d9791b"/></linearGradient>
+<pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#fff" stroke-opacity=".05"/></pattern>
+</defs>
+<style>
+.pulse{animation:pulse 3s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.float{animation:float 5s ease-in-out infinite}
+.dash{stroke-dasharray:8 10;animation:dash 2.2s linear infinite}
+.spin{animation:spin 14s linear infinite}
+.blink{animation:blink 1.6s steps(2,end) infinite}
+.draw{stroke-dasharray:900;stroke-dashoffset:900;animation:draw 3.5s ease forwards}
+.rise{transform-box:fill-box;transform-origin:bottom;animation:rise 1.4s cubic-bezier(.2,.9,.3,1) both}
+@keyframes pulse{0%,100%{opacity:.35;transform:scale(.92)}50%{opacity:1;transform:scale(1.06)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes dash{to{stroke-dashoffset:-36}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{50%{opacity:.15}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes rise{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}.draw{stroke-dashoffset:0}}
+</style>
+<rect width="1200" height="400" fill="url(#bg)"/>
+<rect width="1200" height="400" fill="url(#grid)"/>
+
+<text x="1180" y="330" text-anchor="end" font-family="Georgia,'Times New Roman',serif" font-size="200" font-weight="700" fill="#fff" fill-opacity=".06">1988</text>
+<circle cx="900" cy="200" r="210" fill="url(#glow)" class="pulse"/>
+<g transform="translate(810 205) scale(.86) translate(-720 -200)"><g class="float">
+ <circle cx="720" cy="200" r="104" fill="#eef3f8"/><circle cx="720" cy="200" r="104" fill="none" stroke="#b9c6d3" stroke-width="6"/>
+ <g stroke="#14202e" stroke-width="3" stroke-linecap="round"><path d="M720 108v14M720 278v14M628 200h14M798 200h14M655 135l10 10M775 255l10 10M785 135l-10 10M665 255l-10 10"/></g>
+ <circle cx="720" cy="200" r="8" fill="#14202e"/>
+ <g class="spin" style="transform-origin:720px 200px"><path d="M720 200L720 124" stroke="#d9791b" stroke-width="5" stroke-linecap="round"/></g>
+ <text x="720" y="250" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#14202e">kWh</text>
+</g></g>
+<path d="M915 205h40" stroke="#e0902f" stroke-width="5" stroke-linecap="round" class="dash"/>
+<path d="M943 189l20 16-20 16" fill="none" stroke="#e0902f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="float" style="animation-delay:.8s">
+ <rect x="985" y="125" width="175" height="150" rx="20" fill="#eef3f8"/>
+ <rect x="1001" y="145" width="143" height="58" rx="9" fill="#0b1c2d"/>
+ <text x="1072" y="185" text-anchor="middle" font-family="Consolas,'Courier New',monospace" font-size="26" font-weight="700" fill="#5ff2b0">0088.1</text>
+ <circle cx="1022" cy="238" r="8" fill="#e0902f" class="blink"/><circle cx="1046" cy="238" r="8" fill="#5ff2b0"/>
+ <rect x="1092" y="226" width="42" height="24" rx="6" fill="#d3dde7"/>
+</g>
+</svg>

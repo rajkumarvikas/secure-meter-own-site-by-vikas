@@ -1,0 +1,36 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Meter Data Hub</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<header><h1>Meter Data Hub</h1><p>AMR communication, BIS power quality and a combined view. Files are processed in your browser and never uploaded.</p>
+<nav id="nav"><button data-p="0" class="on">Upload</button><button data-p="1">AMR Analyzer</button><button data-p="2">BIS Dashboard</button><button data-p="3">Combined view</button></nav></header>
+<main>
+<section class="pg" id="p0"><h2>Upload your files</h2><p class="sub">Add one or both. The Combined view needs both.</p>
+<div class="two"><div class="card"><label class="drop" id="dm"><b>Meter-wise data (CSV)</b><span>Analyse_meterwisedata.csv. Takes 10-20 seconds to read.</span><input type="file" accept=".csv" hidden></label><div class="mg" id="sm"></div></div>
+<div class="card"><label class="drop" id="db"><b>BIS summary (CSV)</b><span>BIS_detail_summary_….csv</span><input type="file" accept=".csv" hidden></label><div class="mg" id="sb"></div></div></div></section>
+
+<div id="fb" class="card bar hide"><div id="mR"></div><div id="mC"></div><div id="mS"></div>
+<div id="ac" class="bar hide"><div><label class="f">Type of data</label><select id="fT"></select></div><div><label class="f">From</label><select id="fF"></select></div><div><label class="f">Last date</label><select id="fE"></select></div></div><div class="bar" style="margin-left:auto"><button class="btn" data-x="xl">Export Excel dashboard</button><button class="btn alt" data-x="hr">Export HTML report</button></div></div>
+
+<section class="pg hide" id="p1"><div id="e1" class="card empty">Upload the meter-wise CSV first.</div><div id="b1" class="hide">
+<div class="kpis" id="k1"></div><div class="two"><div class="card"><h3>AMR share</h3><div id="pa"></div></div><div class="card"><h3>By region</h3><div id="a1"></div></div><div class="card"><h3>Meters reporting each day</h3><div id="a3"></div><div class="note">AMR = data on the last date and some data in the range. Today's partial day can look low.</div></div></div>
+<div class="card"><h3>By circle (lowest AMR first)</h3><div class="chart" id="a2"></div></div>
+<div class="card"><h3>Non AMR meters</h3><div class="scroll" id="t1"></div><div class="bar" style="margin-top:10px"><button class="btn" data-x="1">Export Non AMR list (CSV)</button></div></div></div>
+<div id="nd" class="hide"><div class="bar" style="margin-bottom:14px"><button class="btn" id="bn">Show Non AMR day-wise dashboard</button></div>
+<div id="np" class="hide"><div class="card"><h2 id="nh"></h2><p class="sub" id="ns"></p><div class="bar"><button class="btn" data-m="0">Days with data (selected range)</button><button class="btn alt" data-m="1">Ageing: 0-3, 4-7, 8-15, 16-30, 31-60</button></div><div class="bar" style="margin-top:12px"><button class="btn" data-x="nx">Export Excel dashboard</button><button class="btn alt" data-x="nc">Export CSV</button></div></div>
+<div class="card"><h3>Region-wise Non AMR meters</h3><div class="chart" id="nrb"></div></div><div class="card hide" id="nrtc"><h3>Region-wise table</h3><div class="scroll" id="nrt"></div></div></div></div></section>
+
+<section class="pg hide" id="p2"><div id="e2" class="card empty">Upload the BIS summary CSV first.</div><div id="b2" class="hide">
+<div class="kpis" id="k2"></div><div class="two"><div class="card"><h3>Overall BIS status</h3><div id="pb"></div></div><div class="card"><h3>Overall status by region</h3><div id="c1"></div></div><div class="card"><h3>Parameter-wise results</h3><div id="c4"></div></div></div>
+<div class="card"><h3>By circle (lowest pass rate first)</h3><div class="chart" id="c2"></div></div>
+<div class="two"><div class="card"><h3>Top 10 substations with data not available</h3><div class="scroll" id="c3"></div></div><div class="card"><h3>Meter details (first 200)</h3><div class="scroll" id="t2"></div></div></div>
+<button class="btn" data-x="2">Export Fail and Not available meters (CSV)</button></div></section>
+
+<section class="pg hide" id="p3"><div id="e3" class="card empty">Upload the meter-wise CSV (and the BIS CSV) first.</div><div id="b3" class="hide">
+<div class="bar" id="sn" style="margin-bottom:14px"><button class="btn" data-s="0">Combined</button><button class="btn alt" data-s="1">Non AMR</button><button class="btn alt" data-s="2">BIS data not available</button></div><div id="v0"><div class="ins" id="i3"></div><div class="kpis" id="k3"></div>
+<div class="two"><div class="card"><h3>Problem meters split</h3><div id="pc"></div></div><div class="card"><h3>By region</h3><div id="m3"></div></div></div>
+<div class="card"><h3>By circle (most problem meters first)</h3><div class="chart" id="s3"></div></div>
+<div class="two"><div class="card"><h3>Top 10 substations</h3><div class="scroll" id="u3"></div></div><div class="card"><h3>Problem meter list (first 200)</h3><div class="scroll" id="w3"></div></div></div>
+<div class="bar"><button class="btn" data-x="3">Export combined list (CSV)</button><button class="btn alt" id="chg">Change AMR settings</button></div><div class="note" id="n3"></div></div><div id="v1" class="hide"></div><div id="v2" class="hide"></div></div></section>
+</main>
+<script src="app.js"></script><script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/drive-picker.js"></script>
+</body></html>

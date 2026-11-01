@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asset Lookup — Meter &amp; Substation Search</title>
+<!-- Excel reader: uses vendor/xlsx.full.min.js when it exists (fully offline); otherwise the online copy -->
+<script src="../../vendor/xlsx.full.min.js"></script>
+<script>window.XLSX||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>')</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="sheet">
+
+  <header class="masthead">
+    <div>
+      <h1>Asset Lookup</h1>
+      <p>Upload a meter / substation register (.xlsx or .csv), then search it by Meter Sr. No. or Substation Name — paste as many as you like.</p>
+    </div>
+    <div class="ruler">
+      <span>REV — SEARCH TOOL</span>
+      <span id="todayStamp"></span>
+    </div>
+  </header>
+
+  <!-- Upload -->
+  <section class="panel" id="uploadPanel">
+    <div class="panel-head">
+      <h2>01 — Load register</h2>
+      <div class="meta" id="uploadMeta"></div>
+    </div>
+    <div id="dropzone">
+      <div class="icon">⇪</div>
+      <div class="primary">Click to browse, or drop a file here</div>
+      <div class="secondary">Accepts .xlsx, .xls, .xlsb, .csv</div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsb,.csv">
+    </div>
+    <div id="fileSummary" style="display:none; margin-top:16px;">
+      <div class="file-summary">
+        <div class="stat"><b id="statFileName">—</b><span class="stat-label">FILE</span></div>
+        <div class="stat"><b id="statSheet">—</b><span class="stat-label">SHEET</span></div>
+        <div class="stat"><b id="statRows">0</b><span class="stat-label">ROWS</span></div>
+        <div class="stat"><b id="statCols">0</b><span class="stat-label">COLUMNS</span></div>
+        <div id="sheetPickerWrap" style="display:none; min-width:180px;">
+          <label class="field-label">Sheet</label>
+          <select id="sheetPicker"></select>
+        </div>
+        <button class="ghost" id="changeFileBtn" type="button" style="margin-left:auto;">Load a different file</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Search -->
+  <section class="panel" id="searchPanel" style="display:none;">
+    <div class="panel-head">
+      <h2>02 — Search</h2>
+    </div>
+    <div class="field-row">
+      <div>
+        <label class="field-label">Search by</label>
+        <div class="radio-group" id="fieldModeGroup">
+          <label><input type="radio" name="fieldMode" value="meter" checked> Meter Sr. No.</label>
+          <label><input type="radio" name="fieldMode" value="substation"> Substation Name</label>
+          <label><input type="radio" name="fieldMode" value="both"> Either</label>
+        </div>
+      </div>
+      <div>
+        <label class="field-label">Meter Sr. No. column</label>
+        <select id="meterColSelect"></select>
+      </div>
+      <div>
+        <label class="field-label">Substation Name column</label>
+        <select id="substationColSelect"></select>
+      </div>
+    </div>
+    <label class="field-label" for="searchInput">Paste one or more values — one per line, or separated by commas</label>
+    <textarea id="searchInput" placeholder="X2050837&#10;X2050839&#10;33/11 KV LIMBEJALGAON"></textarea>
+    <div class="hint">Matching is exact and case-insensitive. Whitespace around each pasted value is ignored.</div>
+    <div class="btn-row">
+      <button class="primary" id="searchBtn" type="button">Search</button>
+      <button class="ghost" id="clearBtn" type="button">Clear</button>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section class="panel" id="resultsPanel" style="display:none;">
+    <div class="panel-head">
+      <h2>03 — Results</h2>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="export" id="exportBtn" type="button" disabled>Export to Excel</button>
+        <button class="ghost" id="exportJobBtn" type="button" disabled>Export for job assignment</button>
+      </div>
+    </div>
+    <div class="status-line" id="statusLine"></div>
+    <div id="missingListWrap"></div>
+    <div class="table-wrap" id="tableWrap">
+      <div class="empty-state">Run a search to see matching rows here.</div>
+    </div>
+  </section>
+
+  <footer class="note">Runs entirely in your browser — the file never leaves your machine.</footer>
+</div>
+
+<script src="app.js"></script>
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/js/drive-picker.js"></script>
+</body>
+</html>
