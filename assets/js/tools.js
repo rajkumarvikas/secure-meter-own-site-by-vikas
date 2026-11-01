@@ -63,6 +63,17 @@ window.TOOLS = [
     button: "Open 1983 Processor"
   },
   {
+    id: "BIS Invoice",
+    name: "BIS Invoice Generator",
+    short: "BIS Invoice",
+    icon: "file",
+    color: "#7a5ccf",
+    path: "tools/BIS_Invoice/index.html",
+    description: "Mark daily attendance, see the monthly grid with totals, export to Excel or CSV.",
+    worksWith: "Employee list (CSV, optional)",
+    button: "Open Attendance"
+  },
+  {
     id: "attendance",
     name: "Attendance Record",
     short: "Attendance",

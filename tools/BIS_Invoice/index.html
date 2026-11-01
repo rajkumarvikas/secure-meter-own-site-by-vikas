@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BIS Monthly Status Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css"></head><body><div class="wrap">
+<h1>BIS monthly status dashboard</h1>
+<p class="sub">Upload the four weekly files. A meter is Ready for Invoice when it has a Pass or Fail overall status in at least 2 of the weeks.</p>
+<div id="drop" tabindex="0" role="button" aria-label="Upload CSV files"><b>Drop the four weekly CSV files here, or click to choose</b><span>Overall status is read from column L of every file</span>
+<input id="fi" type="file" accept=".csv" multiple hidden></div>
+<div id="files"></div>
+<div id="dash">
+<div class="bar"><label>Week <select id="fw"></select></label><label>Region <select id="fr"></select></label><span class="sp"></span><button class="pri" id="ex">Export to Excel</button><button id="eh">Export to HTML</button></div>
+<div class="kpis" id="kpis"></div><div class="kpis2" id="kpis2"></div>
+<div class="grid"><div class="card"><h2>Readings by week</h2><div class="cv"><canvas id="c1"></canvas></div></div>
+<div class="card"><h2>Meter invoice status</h2><div class="cv"><canvas id="c2"></canvas></div></div></div>
+<div class="grid"><div class="card"><h2>Meters by zone</h2><div class="cv"><canvas id="c3"></canvas></div></div>
+<div class="card"><h2>Weekly summary</h2><div class="tw"><table id="wt"></table></div></div></div>
+<div class="card"><div class="bar" style="margin-top:0"><h2 style="margin:0">Meters</h2><select id="fs" aria-label="Invoice status"><option value="Ready for Invoice">Ready for Invoice</option><option value="Not Ready">Not Ready</option><option value="all">All meters</option></select><span class="sp"></span><input type="search" id="q" placeholder="Search substation, meter, zone"></div>
+<div class="tw" style="max-height:420px;overflow-y:auto"><table id="rt"></table></div><div class="note" id="rn"></div></div>
+</div>
+<div class="note" id="msg" role="status"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="app.js"></script></body></html>
