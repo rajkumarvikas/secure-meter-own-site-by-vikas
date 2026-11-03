@@ -9,21 +9,39 @@ const setO=(s,a,all)=>{const v=s.value;s.innerHTML=(all?`<option value="">${all}
 /* ---------- loaders ---------- */
 async function loadM(f){msg('sm','Reading file...');await tk();const a=parse((await f.text()).replace(/^\uFEFF/,'')),h=a[0].map(x=>x.trim()),ix={};h.forEach((x,i)=>ix[x]=i);
  const dc=h.map((x,i)=>/^\d{4}-\d{2}-\d{2}$/.test(x)?i:-1).filter(i=>i>=0),need=['Region','Circle','Substation','Meter serial no','Type of data'];
- if(!dc.length||need.some(k=>!(k in ix))){msg('sm','This is not a meter-wise file. It needs: '+need.join(', ')+' and date columns (YYYY-MM-DD).',1);return}
+ if(!dc.length||need.some(k=>!(k in ix))){msg('sm','This is not a meter-wise file. It needs: '+need.join(', ')+' and date columns (YYYY-MM-DD).',1);return false}
  D=dc.map(i=>h[i]);M=a.slice(1).filter(r=>r[ix.Region]&&r[ix['Type of data']]).map(r=>({rg:r[ix.Region],ci:r[ix.Circle],sb:r[ix.Substation],mt:r[ix['Meter serial no']],ty:r[ix['Type of data']],ms:r[ix['Meter status']]||'',gs:r[ix['Gateway status']]||'',lc:r[ix['Meter last connect time']]||'',v:Int16Array.from(dc,i=>+r[i]||0)}));
  let kd=-1;for(const r of M)for(let i=r.v.length-1;i>kd;i--)if(r.v[i]>0){kd=i;break}
  if(kd>=0&&kd<D.length-1){D=D.slice(0,kd+1);M.forEach(r=>r.v=r.v.slice(0,kd+1))}
  const sn=new Set();MU=M.filter(r=>!sn.has(r.mt)&&sn.add(r.mt));const ty=[...new Set(M.map(r=>r.ty))].sort();setO($('#fT'),ty);if(ty.includes('Loadsurvey (Sip data)'))$('#fT').value='Loadsurvey (Sip data)';
  setO($('#fF'),D);setO($('#fE'),D);$('#fF').value=D[0];$('#fE').value=D[defTo()];
- msg('sm',`${f.name}: ${M.length.toLocaleString('en-IN')} rows, ${new Set(M.map(r=>r.mt)).size.toLocaleString('en-IN')} meters, ${D.length} dates.`);calc();link();ready()}
+ msg('sm',`${f.name}: ${M.length.toLocaleString('en-IN')} rows, ${new Set(M.map(r=>r.mt)).size.toLocaleString('en-IN')} meters, ${D.length} dates.`);await attachPrev();calc();link();ready();return true}
+/* ---------- previous month file: used ONLY for Non AMR ageing ---------- */
+let CUR=null,PRV=null,PD=[];
+async function attachPrev(){PD=[];M.forEach(r=>r.pv=null);if(!PRV||!M.length){if(!PRV)msg('sm2','');return}
+ msg('sm2','Reading previous month file...');await tk();
+ const a=parse((await PRV.text()).replace(/^\uFEFF/,'')),h=a[0].map(x=>x.trim()),ix={};h.forEach((x,i)=>ix[x]=i);
+ const dc=h.map((x,i)=>/^\d{4}-\d{2}-\d{2}$/.test(x)?i:-1).filter(i=>i>=0);
+ if(!dc.length||!('Meter serial no' in ix)||!('Type of data' in ix)){msg('sm2','This is not a meter-wise file. It needs Meter serial no, Type of data and date columns (YYYY-MM-DD).',1);PRV=null;return}
+ const cols=dc.filter(i=>h[i]<D[0]).sort((x,y)=>h[x]<h[y]?-1:1);
+ if(!cols.length){msg('sm2','This file has no dates before the current month file, so it cannot be used for ageing.',1);PRV=null;return}
+ PD=cols.map(i=>h[i]);
+ const idx=new Map(),cnt=new Map();
+ for(const r of M){const k0=r.mt+'|'+r.ty,n=(cnt.get(k0)||0)+1;cnt.set(k0,n);idx.set(k0+'|'+n,r)}
+ const seen=new Map();let hit=0;
+ for(let q=1;q<a.length;q++){const row=a[q];if(!row[ix['Type of data']])continue;
+  const k0=row[ix['Meter serial no']]+'|'+row[ix['Type of data']],n=(seen.get(k0)||0)+1;seen.set(k0,n);
+  const r=idx.get(k0+'|'+n);if(!r)continue;r.pv=Int16Array.from(cols,i=>+row[i]||0);hit++}
+ msg('sm2',`${PRV.name}: used for ageing only (${PD[0]} to ${PD[PD.length-1]}, ${PD.length} dates). ${hit.toLocaleString('en-IN')} rows matched with current month meters.`)}
 async function loadB(f){msg('sb','Reading file...');await tk();const a=parse((await f.text()).replace(/^\uFEFF/,'')),h=a[0].map(x=>x.trim()),ix={};h.forEach((x,i)=>ix[x]=i);
  const need=['Region','Circle','Substation name','Meter serial number','Overall status'];
  if(need.some(k=>!(k in ix))){msg('sb','This is not a BIS summary file. It needs: '+need.join(', '),1);return}
  const j=ix['Overall status']+1;P=h.slice(j);B=a.slice(1).filter(r=>r[ix.Region]).map(r=>({rg:r[ix.Region],ci:r[ix.Circle],sb:r[ix['Substation name']],mt:r[ix['Meter serial number']],st:(r[ix['Overall status']]||'').trim(),p:r.slice(j,j+P.length).map(s=>s.trim())}));
  BW=('Week number' in ix&&a[1])?`Week ${a[1][ix['Week number']]} from ${a[1][ix['Start date']]}`:'';
  msg('sb',`${f.name}: ${B.length.toLocaleString('en-IN')} meters, ${P.length} parameters. ${BW}`);link();ready()}
-[['#dm',loadM],['#db',loadB]].forEach(([s,fn])=>{const z=$(s),i=z.querySelector('input');i.onchange=e=>e.target.files[0]&&fn(e.target.files[0]);
- z.ondragover=e=>{e.preventDefault();z.classList.add('on')};z.ondragleave=()=>z.classList.remove('on');z.ondrop=e=>{e.preventDefault();z.classList.remove('on');e.dataTransfer.files[0]&&fn(e.dataTransfer.files[0])}});
+const pick=async(w,f)=>{if(w){const o=PRV;PRV=f;if(!CUR||!M.length){msg('sm2',f.name+': saved. Now upload the current month file.');return}await attachPrev();if(!PRV&&o)PRV=null;render()}else{const o=CUR;CUR=f;if(!(await loadM(f)))CUR=o}};
+[['#dm',fs=>pick(0,fs[0])],['#dm2',fs=>pick(1,fs[0])],['#db',fs=>loadB(fs[0])]].forEach(([s,fn])=>{const z=$(s),i=z.querySelector('input');i.onchange=e=>{if(e.target.files.length)fn([...e.target.files]);e.target.value=''};
+ z.ondragover=e=>{e.preventDefault();z.classList.add('on')};z.ondragleave=()=>z.classList.remove('on');z.ondrop=e=>{e.preventDefault();z.classList.remove('on');e.dataTransfer.files.length&&fn([...e.dataTransfer.files])}});
 /* ---------- filters and AMR calc ---------- */
 function defTo(){const rows=M.filter(r=>r.ty===$('#fT').value),md=D.map((_,i)=>{const a=rows.map(r=>r.v[i]).sort((x,y)=>x-y);return a[a.length>>1]||0}),mx=Math.max(...md);let k=0;D.forEach((_,i)=>{if(mx>0?md[i]>=mx*.9:rows.some(r=>r.v[i]>0))k=i});return k}
 const hiI=()=>Math.max(D.indexOf($('#fF').value),D.indexOf($('#fE').value)),loI=()=>Math.min(D.indexOf($('#fF').value),D.indexOf($('#fE').value));
@@ -135,11 +153,12 @@ function naMode(L,tot,key,lb,co,fix,title,fn,note,tb){const n=L.length,tt=o=>o.v
 function naBuild(){const lo=loI(),hi=hiI(),N=hi-lo+1,all=amrL(),L=all.filter(x=>!x.ok),tot=all.length,last=D[hi];
  for(const x of L){let c=0,a=-1;for(let i=lo;i<=hi;i++)if(x.r.v[i]>0)c++;x.d=c;
   for(let i=hi;i>=0;i--)if(x.r.v[i]>0){a=dbt(D[i],last);x.ld=D[i];break}
-  if(a<0){a=dbt(D[0],last)+1;x.ld=''}
+  if(a<0&&x.r.pv)for(let i=PD.length-1;i>=0;i--)if(x.r.pv[i]>0){a=dbt(PD[i],last);x.ld=PD[i];break}
+  if(a<0){a=dbt(PD[0]||D[0],last)+1;x.ld=''}
   x.a=a}
  const ab=a=>a<=3?0:a<=7?1:a<=15?2:a<=30?3:a<=60?4:5,
  dn=`${N} date(s) selected (${fd(D[lo])} to ${fd(last)}). A Non AMR meter has data on 0 to ${N-1} of these ${N} days.`,
- an=`Ageing is calculated only from the dates in the file up to the Last date (${fd(D[0])} to ${fd(last)}, ${dbt(D[0],last)+1} days); nothing after the Last date is used. Ageing = whole days from the meter's most recent day with data to the Last date. If a meter has no data on any of these days, its ageing is counted from the first date, so it equals the number of days up to the Last date. Buckets longer than that period stay at 0. 0-3 means 0 to 3 days, 4-7 means 4 to 7 days, and so on.`;
+ an=`Ageing is calculated only from the dates in the file up to the Last date (${fd(PD[0]||D[0])} to ${fd(last)}, ${dbt(PD[0]||D[0],last)+1} days); nothing after the Last date is used. Ageing = whole days from the meter's most recent day with data to the Last date. If a meter has no data on any of these days, its ageing is counted from the first date, so it equals the number of days up to the Last date. Buckets longer than that period stay at 0. 0-3 means 0 to 3 days, 4-7 means 4 to 7 days, and so on.`;
  return{N,lo,hi,dn,an,ah:['Region','Circle','Substation','Meter','AMR status','Meter status','Gateway','Last data date','Ageing (days)','Ageing bucket'],ar:L.map(x=>[x.r.rg,x.r.ci,x.r.sb,x.r.mt,'Non AMR',x.r.ms,x.r.gs,x.ld?fd(x.ld):'No data in period',x.a,AL[ab(x.a)]]),day:naMode(L,tot,x=>x.d,[...Array(N)].map((_,d)=>`${d} of ${N} days`),[...Array(N)].map((_,d)=>hx(d,N)),N,`Non AMR day-wise status (${fd(D[lo])} to ${fd(last)})`,'non_amr_daywise',dn),
   age:naMode(L,tot,x=>ab(x.a),AL,AC,5,`Non AMR ageing (as on ${fd(last)})`,'non_amr_ageing',an,1)}}
 function rNA(){const B2=naBuild(),M2=nm?B2.age:B2.day;
