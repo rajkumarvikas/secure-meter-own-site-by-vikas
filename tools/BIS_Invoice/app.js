@@ -1,4 +1,4 @@
-var NA='Not available',RD='Ready for Invoice',NR='Not Ready',MINW=2,data={},ch={},meters=[];
+var NA='Not available',RD='Ready for Invoice',NR='Not Ready',MINW=1,data={},ch={},meters=[];
 var $=function(i){return document.getElementById(i)};
 function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
 function col(){return {Pass:css('--pass'),Fail:css('--fail'),'Not available':'#9aa7b2','Ready for Invoice':css('--rdy'),'Not Ready':css('--mut')}}
@@ -20,7 +20,7 @@ function agg(){var m={},ws=weeks();ws.forEach(function(w){data[w].rows.forEach(f
  meters=Object.keys(m).map(function(k){var o=m[k];o.valid=0;ws.forEach(function(w){if(o.wk[w]==='Pass'||o.wk[w]==='Fail')o.valid++});o.inv=o.valid>=MINW?RD:NR;return o});
  all().forEach(function(r){r.inv=m[r.meter].inv})}
 function init(){agg();var ws=weeks(),regs={};all().forEach(function(r){regs[r.region]=1});
- $('files').textContent='Loaded '+ws.length+' week file(s): '+ws.map(function(w){return 'Week '+w+' ('+fmt(data[w].rows.length)+' meters)'}).join(', ')+(ws.length<4?'. Add the remaining files to complete the month.':'')+(ws.length<MINW?' At least 2 weeks are needed before any meter can be Ready for Invoice.':'');
+ $('files').textContent='Loaded '+ws.length+' week file(s): '+ws.map(function(w){return 'Week '+w+' ('+fmt(data[w].rows.length)+' meters)'}).join(', ')+(ws.length<4?'. Add the remaining files to complete the month.':'');
  var fw=$('fw'),fr=$('fr'),cw=fw.value,cr=fr.value;
  fw.innerHTML='<option value="all">Whole month</option>'+ws.map(function(w){return '<option value="'+w+'">Week '+w+'</option>'}).join('');
  fr.innerHTML='<option value="all">All regions</option>'+Object.keys(regs).sort().map(function(r){return '<option>'+esc(r)+'</option>'}).join('');
@@ -53,7 +53,7 @@ function render(){var ms=inReg(),M=mc(ms),c=cnt(sel()),C=col(),ln=css('--line'),
  $('wt').innerHTML=TT(WH,wkRows());table()}
 function sh(s){return s===NA?'N/A':s||'-'}
 function table(){var q=$('q').value.toLowerCase(),f=$('fs').value,ws=weeks(),ms=inReg().filter(function(m){return (f==='all'||m.inv===f)&&(!q||(m.ss+m.loc+m.meter+m.zone+m.circle).toLowerCase().indexOf(q)>-1)});
- var h='<tr><th>Zone</th><th>Circle</th><th>Substation</th><th>Metering location</th><th>Meter serial</th>'+ws.map(function(w){return '<th>Wk '+w+'</th>'}).join('')+'<th class="r">Weeks with data</th><th>Invoice status</th></tr>';
+ var h='<tr><th>Zone</th><th>Circle</th><th>Substation</th><th>Metering location</th><th>Meter serial</th>'+ws.map(function(w){return '<th>Wk '+w+'</th>'}).join('')+'<th class="r">Weeks with Pass/Fail</th><th>Invoice status</th></tr>';
  ms.slice(0,300).forEach(function(m){h+='<tr><td>'+esc(m.zone)+'</td><td>'+esc(m.circle)+'</td><td>'+esc(m.ss)+'</td><td>'+esc(m.loc)+'</td><td>'+esc(m.meter)+'</td>'+ws.map(function(w){return '<td>'+sh(m.wk[w])+'</td>'}).join('')+'<td class="r">'+m.valid+'</td><td><span class="tag'+(m.inv===RD?'':' n')+'">'+m.inv+'</span></td></tr>'});
  $('rt').innerHTML=h;$('rn').textContent=ms.length>300?'Showing the first 300 of '+fmt(ms.length)+' meters. The exports contain all of them.':fmt(ms.length)+' meter(s).'}
 function snap(){var w=$('fw').value,g=$('fr').value,ms=inReg(),Z={};
@@ -71,7 +71,7 @@ function exportXls(){if(!weeks().length)return;var s=snap(),wb=new ExcelJS.Workb
  var d=wb.addWorksheet('Dashboard',{views:[{showGridLines:false}]}),M=s.M,c=s.c;
  d.columns=[{width:30},{width:16},{width:16},{width:14},{width:14},{width:20},{width:22}];
  d.addRow(['BIS monthly status dashboard']).font={bold:true,size:16};d.addRow(['View: '+s.view]);
- d.addRow(['Rule: a meter is Ready for Invoice when it has Pass or Fail in at least '+MINW+' weeks.']);d.addRow([]);
+ d.addRow(['Rule: a meter is Ready for Invoice when it has Pass or Fail in at least 1 week.']);d.addRow([]);
  hdr(d.addRow(['KPI','Count','Share']));
  d.addRow([RD+' (meters)',M.r,pct(M.r,M.t)]).font={bold:true,color:{argb:'FFB26B00'}};
  d.addRow(['Total meters',M.t,'']);d.addRow([NR+' (meters)',M.n,pct(M.n,M.t)]);
@@ -92,7 +92,7 @@ function buildHtml(CSS){var s=snap(),im=['c1','c2','c3'].map(img);
  function P(t,i){return '<div class="card"><h2>'+t+'</h2><img src="'+im[i]+'" alt="'+t+'"></div>'}
  var v=['--bg','--card','--ink','--mut','--line','--pass','--fail','--rdy','--rdybg','--acc'].map(function(k){return k+':'+css(k)}).join(';');
  var R=s.ms.filter(function(m){return m.inv===RD}),N=s.ms.filter(function(m){return m.inv!==RD});
- var h='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BIS monthly status report</title><style>'+CSS+':root:root{'+v+'}img{max-width:100%;height:auto}.cv,.bar{display:none}</style></head><body><div class="wrap"><h1>BIS monthly status report</h1><p class="sub">View: '+esc(s.view)+' | Generated '+new Date().toLocaleDateString('en-GB')+'<br>Rule: a meter is Ready for Invoice when it has Pass or Fail in at least '+MINW+' weeks.</p><div class="kpis">'+$('kpis').innerHTML+'</div><div class="kpis2">'+$('kpis2').innerHTML+'</div>'+
+ var h='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BIS monthly status report</title><style>'+CSS+':root:root{'+v+'}img{max-width:100%;height:auto}.cv,.bar{display:none}</style></head><body><div class="wrap"><h1>BIS monthly status report</h1><p class="sub">View: '+esc(s.view)+' | Generated '+new Date().toLocaleDateString('en-GB')+'<br>Rule: a meter is Ready for Invoice when it has Pass or Fail in at least 1 week.</p><div class="kpis">'+$('kpis').innerHTML+'</div><div class="kpis2">'+$('kpis2').innerHTML+'</div>'+
  '<div class="grid">'+P('Readings by week',0)+P('Meter invoice status',1)+'</div><div class="grid">'+P('Meters by zone',2)+'<div class="card"><h2>Weekly summary</h2>'+T(WH,s.wk)+'</div></div>'+
  '<div class="card" style="margin-bottom:12px"><h2>Status by zone</h2>'+T(ZH,s.zn)+'</div><div class="card" style="margin-bottom:12px"><h2>Ready for Invoice meters ('+R.length+')</h2>'+T(MH(),R.map(mrow))+'</div><div class="card"><h2>Not Ready meters ('+N.length+')</h2>'+T(MH(),N.map(mrow))+'</div></div></body></html>';
  saveFile('BIS_dashboard_'+s.tag+'.html',new Blob([h],{type:'text/html'}))}
