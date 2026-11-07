@@ -45,7 +45,7 @@ const pick=async(w,f)=>{if(w){const o=PRV;PRV=f;if(!CUR||!M.length){msg('sm2',f.
 /* ---------- filters and AMR calc ---------- */
 function defTo(){const rows=M.filter(r=>r.ty===$('#fT').value),md=D.map((_,i)=>{const a=rows.map(r=>r.v[i]).sort((x,y)=>x-y);return a[a.length>>1]||0}),mx=Math.max(...md);let k=0;D.forEach((_,i)=>{if(mx>0?md[i]>=mx*.9:rows.some(r=>r.v[i]>0))k=i});return k}
 const hiI=()=>Math.max(D.indexOf($('#fF').value),D.indexOf($('#fE').value)),loI=()=>Math.min(D.indexOf($('#fF').value),D.indexOf($('#fE').value));
-function calc(){A=new Map();if(!M.length)return;const ty=$('#fT').value,lo=loI(),hi=hiI();for(const r of M){if(r.ty!==ty)continue;let s=0;for(let i=lo;i<=hi;i++)s+=r.v[i]>0?r.v[i]:0;A.set(r.mt,{r,s,ok:s>0&&r.v[hi]>0})}}
+function calc(){A=new Map();if(!M.length)return;const ty=$('#fT').value,lo=loI(),hi=hiI();for(const r of M){if(r.ty!==ty)continue;let s=0,dd=0;for(let i=lo;i<=hi;i++)if(r.v[i]>0){s+=r.v[i];dd++}A.set(r.mt,{r,s,dd,ok:s>0})}}
 $('#fT').onchange=()=>{$('#fE').value=D[defTo()];calc();render()};$('#fF').onchange=$('#fE').onchange=()=>{calc();render()};
 /* ---------- helpers ---------- */
 const kp=a=>a.map(([l,v,c])=>`<div class="kp ${c||''}"><b>${nf(v)}</b><span>${l}</span></div>`).join('');
@@ -86,17 +86,20 @@ document.addEventListener('click',e=>document.querySelectorAll('.ms details[open
 const ptab=(t,lab,g,nm,xh=[],xf=()=>[])=>({t,h:[lab,'Meters',...nm,...nm.map(x=>x+' %'),...xh],r:g.map(o=>{const n=o.v.reduce((a,b)=>a+b,0);return[o.k,n,...o.v,...o.v.map(x=>pc(x,n)),...xf(o.v,n)]}),nc:1});
 /* ---------- AMR page ---------- */
 const amrL=()=>[...A.values()].filter(x=>flt(x.r));
-const amrRow=x=>[x.r.rg,x.r.ci,x.r.sb,x.r.mt,x.r.ms,x.r.gs,x.s,x.r.v[hiI()]];
+const amrRow=x=>[x.r.rg,x.r.ci,x.r.sb,x.r.mt,x.r.ms,x.r.gs,x.s,x.dd],
+AH=['Region','Circle','Substation','Meter','Meter status','Gateway','Total readings (range)','Days with data (range)','Status'],
+NH=['Region','Circle','Substation','Meter','Meter status','Gateway','Last data date','Ageing (days)'],
+naRow=x=>{const o=ageOf(x);return[x.r.rg,x.r.ci,x.r.sb,x.r.mt,x.r.ms,x.r.gs,o.ld?fd(o.ld):'No data in period',o.a]};
 function rAMR(q=''){const L=amrL(),ok=L.filter(x=>x.ok).length,n=L.length,hi=hiI(),N=['AMR','Non AMR'],C=[OK,BAD];
  $('#k1'+q).innerHTML=kp([['Total meters',n],['AMR (reporting)',ok,'ok'],['Non AMR',n-ok,'bad'],['AMR %',pc(ok,n),'ok'],['Non AMR %',pc(n-ok,n),'bad']]);
  const G=kf=>grp(L,kf,x=>x.ok?0:1,2).sort((a,b)=>sh(a)-sh(b)),gr=G(x=>short(x.r.rg)),gc=G(x=>short(x.r.ci));
  $('#pa'+q).innerHTML=pieBox([ok,n-ok],N,C,pc(ok,n));$('#a1'+q).innerHTML=stack(gr,N,C);$('#a2'+q).innerHTML=stack(gc,N,C);
  const cn=D.slice(0,hi+1).map((d,i)=>L.filter(x=>x.r.v[i]>0).length),mx=Math.max(1,...cn);
  $('#a3'+q).innerHTML='<div class="tr">'+cn.map((c,i)=>`<div title="${D[i]}: ${c}"><b style="height:${c/mx*84}%"></b><span>${D[i].slice(8)}</span></div>`).join('')+'</div>';
- $('#t1'+q).innerHTML=tbl(['Region','Circle','Substation','Meter','Meter status','Gateway','Sum','Last day'],L.filter(x=>!x.ok).slice(0,200).map(x=>amrRow(x).map((c,i)=>i==4||i==5?tag(c==='Connected'?'Pass':c==='Disconnected'?'Fail':c):esc(c))));
+ const NL=L.filter(x=>!x.ok);$('#t1'+q).innerHTML=tbl(NH,NL.slice(0,200).map(x=>naRow(x).map((c,i)=>i==4||i==5?tag(c==='Connected'?'Pass':c==='Disconnected'?'Fail':c):esc(c))));
  const X={fn:'amr_dashboard',title:q?'Non AMR dashboard':'AMR Analyzer',sub:fsub(1),kpis:[['Total meters',n],['AMR (reporting)',ok],['Non AMR',n-ok],['AMR %',pc(ok,n)],['Non AMR %',pc(n-ok,n)],['Type of data',$('#fT').value],['Date range',D[loI()]+' to '+D[hi]]],
   tabs:[{t:'AMR vs Non AMR',h:['Status','Meters','Share %'],r:[['AMR',ok,pc(ok,n)],['Non AMR',n-ok,pc(n-ok,n)]],pie:1,c:XC},{t:'By region',h:['Region',...N],r:gr.map(o=>[o.k,...o.v]),c:XC},{t:'By circle',h:['Circle',...N],r:gc.map(o=>[o.k,...o.v]),c:XC},ptab('AMR % by region','Region',gr,N),ptab('AMR % by circle','Circle',gc,N),{t:'Meters reporting per day',h:['Date','Meters'],r:D.slice(0,hi+1).map((d,i)=>[d,cn[i]]),c:['2F5FD0']}],
-  head:['Region','Circle','Substation','Meter','Meter status','Gateway','Sum','Last day','Status'],rows:(q?L.filter(x=>!x.ok):L).map(x=>[...amrRow(x),x.ok?'AMR':'Non AMR'])};if(!q)XS=X;return X}
+  head:q?NH:AH,rows:q?NL.map(x=>naRow(x)):L.map(x=>[...amrRow(x),x.ok?'AMR':'Non AMR'])};if(!q)XS=X;return X}
 /* ---------- BIS page ---------- */
 const bisRow=x=>[x.rg,x.ci,x.sb,x.mt,x.st,...x.p];
 function rBIS(q=''){const L=B.filter(flt),c=s=>L.filter(x=>x.st===s).length,pa=c('Pass'),fa=c('Fail'),na=c('Not available'),n=L.length,av=pa+fa,S=['Pass','Fail','Not available'],cl=[OK,BAD,NA],idx=x=>S.indexOf(x.st)<0?2:S.indexOf(x.st),su=new Set(L.map(x=>x.sb)).size;
@@ -117,7 +120,7 @@ let sv=0;const CSVS=[];
 ['1','2'].forEach(i=>$('#v'+i).innerHTML=$('#b'+i).innerHTML.replace(/ id="(\w+)"/g,' id="$1n"').replace('data-x="1"','data-x="c1"').replace('data-x="2">Export Fail and Not available meters (CSV)','data-x="c2">Export BIS not available meters (CSV)'));
 $('#sn').onclick=e=>{const s=e.target.dataset.s;if(s!=null){sv=+s;render()}};
 function rCmb(){document.querySelectorAll('#sn button').forEach((b,i)=>b.className='btn'+(i==sv?'':' alt'));[0,1,2].forEach(i=>$('#v'+i).classList.toggle('hide',i!=sv));const bm=new Map(B.map(x=>[x.mt,x.st])),Z=new Map();
- for(const x of A.values())if(!x.ok&&flt(x.r))Z.set(x.r.mt,{rg:x.r.rg,ci:x.r.ci,sb:subOf(x.r),mt:x.r.mt,k:0,nv:x.s>0?0:1,ms:x.r.ms,gs:x.r.gs});
+ for(const x of A.values())if(!x.ok&&flt(x.r))Z.set(x.r.mt,{rg:x.r.rg,ci:x.r.ci,sb:subOf(x.r),mt:x.r.mt,k:0,ms:x.r.ms,gs:x.r.gs});
  const bn=B.filter(x=>x.st==='Not available'&&flt(x));
  for(const x of bn)if(!Z.has(x.mt)){const a=A.get(x.mt);Z.set(x.mt,{rg:x.rg,ci:x.ci,sb:subOf(x),mt:x.mt,k:1,ms:a?a.r.ms:'',gs:a?a.r.gs:''})}
  const L=[...Z.values()].map(o=>(o.bis=bm.get(o.mt)||'Not in BIS file',o)),n=L.length,a=L.filter(o=>o.k===0).length,b=n-a,tt=o=>o.v[0]+o.v[1],G=kf=>grp(L,kf,o=>o.k,2).sort((x,y)=>tt(y)-tt(x)),gr=G(o=>short(o.rg)),gc=G(o=>short(o.ci)),gs=G(o=>o.sb).slice(0,10);
@@ -128,7 +131,7 @@ function rCmb(){document.querySelectorAll('#sn button').forEach((b,i)=>b.classNa
  W=L.map(o=>[o.rg,o.ci,o.sb,o.mt,o.k?'BIS data not available':'Non AMR',o.bis,o.ms,o.gs]);
  const cs=s=>tag(s==='Connected'?'Pass':s==='Disconnected'?'Fail':s);
  $('#w3').innerHTML=tbl(['Region','Circle','Substation','Meter','Issue','BIS result','Meter status','Gateway'],W.slice(0,200).map(r=>[esc(r[0]),esc(r[1]),esc(r[2]),esc(r[3]),`<span class="tg ${r[4]==='Non AMR'?'t-bad':'t-warn'}">${r[4]}</span>`,tag(r[5]),cs(r[6]),cs(r[7])]));
- $('#n3').textContent=`Communication uses the AMR settings: ${$('#fT').value}, ${D[loI()]} to ${D[hiI()]}. ${BW?'BIS: '+BW+'. ':''}Showing first 200 of ${n}.`;
+ $('#n3').textContent=`Communication uses the AMR settings: ${$('#fT').value}, ${D[loI()]} to ${D[hiI()]}. A meter is Non AMR when it has no data on any of these dates. ${BW?'BIS: '+BW+'. ':''}Showing first 200 of ${n}.`;
  const row=o=>[o.k,...o.v],xc=[XC[1],XC[2]];
  const X0={fn:'problem_meters_dashboard',title:'Non AMR + BIS data not available (combined)',sub:fsub(1),kpis:[['Problem meters (each counted once)',n],['Non AMR meters',a],['BIS data not available',bn.length],['Substations affected',new Set(L.map(o=>o.sb)).size]],
   tabs:[{t:'Problem meters split',h:['Issue','Meters'],r:[[NM[0],a],[NM[1],b]],pie:1,c:xc},{t:'By region',h:['Region',...NM],r:gr.map(row),c:xc},{t:'By circle',h:['Circle',...NM],r:gc.map(row),c:xc},{t:'Top 10 substations',h:['Substation',...NM],r:gs.map(row),c:xc}],
@@ -136,36 +139,39 @@ function rCmb(){document.querySelectorAll('#sn button').forEach((b,i)=>b.classNa
  const X1=rAMR('n'),X2=rBIS('n');CSVS[1]=[X1.head,...X1.rows];CSVS[2]=[X2.head,...X2.rows];
  const NB=naBuild(),ar=amrL().map(x=>[...amrRow(x),x.ok?'AMR':'Non AMR']),br=B.filter(flt).map(bisRow);
  XS={fn:'amr_bis_ageing',title:'AMR, BIS and Non AMR ageing',sub:fsub(1),tt:[X1.title,X2.title],extra:[NB.age.spec],
-  multi:[{...X1,title:'AMR and Non AMR dashboard',rows:ar},{...X2,title:'BIS data available and not available dashboard',rows:br},{head:NB.ah,rows:NB.ar,side:NB.age.spec}],
+  multi:[{...X1,title:'AMR and Non AMR dashboard',head:AH,rows:ar},{...X2,title:'BIS data available and not available dashboard',rows:br},{head:NB.ah,rows:NB.ar,side:NB.age.spec}],
   sn:['AMR-NonAMR Dashboard','BIS Dashboard',''],ds:['AMR-NonAMR Row Data','BIS Row Data','Ageing Row Data']}}
 /* ---------- Non AMR day-wise / ageing dashboard (opens on button click) ---------- */
 let XD=null,nm=0;
-const fd=d=>d.split('-').reverse().join('-'),hx=(i,N)=>{const h=N>1?i/(N-1)*45:0,f=n=>{const k=(n+h/30)%12;return Math.round((.5-.375*Math.max(-1,Math.min(k-3,9-k,1)))*255).toString(16).padStart(2,'0')};return(f(0)+f(8)+f(4)).toUpperCase()};
+const fd=d=>d.split('-').reverse().join('-'),hx=(i,N)=>{const h=N>1?i/(N-1)*120:0,f=n=>{const k=(n+h/30)%12;return Math.round((.5-.375*Math.max(-1,Math.min(k-3,9-k,1)))*255).toString(16).padStart(2,'0')};return(f(0)+f(8)+f(4)).toUpperCase()};
 const dbt=(a,b)=>{const p=s=>Date.UTC(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10));return Math.round((p(b)-p(a))/864e5)},
 AL=['0-3 days','4-7 days','8-15 days','16-30 days','31-60 days','61+ days'],AC=['E3A008','E8801A','D94F30','A83226','6E1F18','4A1410'];
-function naMode(L,tot,key,lb,co,fix,title,fn,note,tb){const n=L.length,tt=o=>o.v.reduce((a,b)=>a+b,0),cnt=Array(lb.length).fill(0);L.forEach(x=>cnt[key(x)]++);
+function ageOf(x){const hi=hiI(),last=D[hi];let a=-1,ld='';
+ for(let i=hi;i>=0;i--)if(x.r.v[i]>0){a=dbt(D[i],last);ld=D[i];break}
+ if(a<0&&x.r.pv)for(let i=PD.length-1;i>=0;i--)if(x.r.pv[i]>0){a=dbt(PD[i],last);ld=PD[i];break}
+ if(a<0)a=dbt(PD[0]||D[0],last)+1;
+ return{a,ld}}
+function naMode(L,key,lb,co,fix,c){const n=L.length,tt=o=>o.v.reduce((a,b)=>a+b,0),cnt=Array(lb.length).fill(0);L.forEach(x=>cnt[key(x)]++);
  const ks=lb.map((_,i)=>i).filter(i=>i<fix||cnt[i]),m=Object.fromEntries(ks.map((i,j)=>[i,j])),nl=ks.map(i=>lb[i]),nc=ks.map(i=>co[i]);
  const rg=grp(L,x=>short(x.r.rg),x=>m[key(x)],ks.length).sort((a,b)=>tt(b)-tt(a)),
- kpis=[['Total meters',tot],['Non AMR meters',n],['Non AMR %',pc(n,tot)],...ks.map(i=>[`${lb[i]} (meters)`,cnt[i]]),...ks.map(i=>[`${lb[i]} (% of Non AMR)`,pc(cnt[i],n)])];
- const hd=['Region',...nl,'Total Non AMR','% of Non AMR'],raw=[...rg.map(o=>[o.k,...o.v,tt(o),pc(tt(o),n)]),['Total',...ks.map(i=>cnt[i]),n,n?'100.0%':'0.0%']],tbh=tbl(hd,raw.map(r=>r.map((c,j)=>j?c:esc(c))));
- return{lb:nl,co:nc,rg,tbh,spec:{fn,title,sub:fsub(1),kpis,tabs:[{t:'Region-wise Non AMR meters',h:['Region',...nl],r:rg.map(o=>[o.k,...o.v]),c:nc},...(tb?[{t:'Region-wise table',h:hd,r:raw,nc:1}]:[])],head:hd,rows:raw,
-  html:`<p class="sub">${esc(note)}</p><div class="card"><h3>Region-wise Non AMR meters</h3><div class="chart">${stack(rg,nl,nc.map(c=>'#'+c),1)}</div></div>`+(tb?`<div class="card"><h3>Region-wise table</h3><div class="scroll">${tbh}</div></div>`:'')}}}
-function naBuild(){const lo=loI(),hi=hiI(),N=hi-lo+1,all=amrL(),L=all.filter(x=>!x.ok),tot=all.length,last=D[hi];
- for(const x of L){let c=0,a=-1;for(let i=lo;i<=hi;i++)if(x.r.v[i]>0)c++;x.d=c;
-  for(let i=hi;i>=0;i--)if(x.r.v[i]>0){a=dbt(D[i],last);x.ld=D[i];break}
-  if(a<0&&x.r.pv)for(let i=PD.length-1;i>=0;i--)if(x.r.pv[i]>0){a=dbt(PD[i],last);x.ld=PD[i];break}
-  if(a<0){a=dbt(PD[0]||D[0],last)+1;x.ld=''}
-  x.a=a}
+ kpis=[...c.lead,...ks.map(i=>[`${lb[i]} (meters)`,cnt[i]]),...ks.map(i=>[`${lb[i]} (% of ${c.bl})`,pc(cnt[i],n)])];
+ const hd=['Region',...nl,`Total ${c.bl}`,`% of ${c.bl}`],raw=[...rg.map(o=>[o.k,...o.v,tt(o),pc(tt(o),n)]),['Total',...ks.map(i=>cnt[i]),n,n?'100.0%':'0.0%']],tbh=tbl(hd,raw.map(r=>r.map((v,j)=>j?v:esc(v))));
+ return{lb:nl,co:nc,rg,tbh,ct:c.ct,spec:{fn:c.fn,title:c.title,sub:fsub(1),kpis,tabs:[{t:c.ct,h:['Region',...nl],r:rg.map(o=>[o.k,...o.v]),c:nc},...(c.tb?[{t:'Region-wise table',h:hd,r:raw,nc:1}]:[])],head:hd,rows:raw,
+  html:`<p class="sub">${esc(c.note)}</p><div class="card"><h3>${esc(c.ct)}</h3><div class="chart">${stack(rg,nl,nc.map(v=>'#'+v),1)}</div></div>`+(c.tb?`<div class="card"><h3>Region-wise table</h3><div class="scroll">${tbh}</div></div>`:'')}}}
+function naBuild(){const lo=loI(),hi=hiI(),N=hi-lo+1,all=amrL(),L=all.filter(x=>!x.ok),tot=all.length,n=L.length,last=D[hi],first=PD[0]||D[0],S=all.filter(x=>!(x.r.v[hi]>0)),ns=S.length;
+ for(const x of S){const o=ageOf(x);x.a=o.a;x.ld=o.ld}
  const ab=a=>a<=3?0:a<=7?1:a<=15?2:a<=30?3:a<=60?4:5,
- dn=`${N} date(s) selected (${fd(D[lo])} to ${fd(last)}). A Non AMR meter has data on 0 to ${N-1} of these ${N} days.`,
- an=`Ageing is calculated only from the dates in the file up to the Last date (${fd(PD[0]||D[0])} to ${fd(last)}, ${dbt(PD[0]||D[0],last)+1} days); nothing after the Last date is used. Ageing = whole days from the meter's most recent day with data to the Last date. If a meter has no data on any of these days, its ageing is counted from the first date, so it equals the number of days up to the Last date. Buckets longer than that period stay at 0. 0-3 means 0 to 3 days, 4-7 means 4 to 7 days, and so on.`;
- return{N,lo,hi,dn,an,ah:['Region','Circle','Substation','Meter','AMR status','Meter status','Gateway','Last data date','Ageing (days)','Ageing bucket'],ar:L.map(x=>[x.r.rg,x.r.ci,x.r.sb,x.r.mt,'Non AMR',x.r.ms,x.r.gs,x.ld?fd(x.ld):'No data in period',x.a,AL[ab(x.a)]]),day:naMode(L,tot,x=>x.d,[...Array(N)].map((_,d)=>`${d} of ${N} days`),[...Array(N)].map((_,d)=>hx(d,N)),N,`Non AMR day-wise status (${fd(D[lo])} to ${fd(last)})`,'non_amr_daywise',dn),
-  age:naMode(L,tot,x=>ab(x.a),AL,AC,5,`Non AMR ageing (as on ${fd(last)})`,'non_amr_ageing',an,1)}}
+ dn=`${N} date(s) selected (${fd(D[lo])} to ${fd(last)}). Each meter is counted by the number of these days on which it has data. 0 days means Non AMR (no data on any selected date). 1 or more days means AMR.`,
+ an=`Ageing is calculated for meters with no data on the Last date (${fd(last)}). Ageing = whole days from the meter's most recent day with data to the Last date. The search starts at the Last date and goes back through the current file, then through the previous month file if one is uploaded (${fd(first)} to ${fd(last)}, ${dbt(first,last)+1} days in total); nothing after the Last date is used. If no data is found on any of these days, ageing is counted from the first date, so it equals the number of days from ${fd(first)} up to and including the Last date. This list is separate from the Non AMR count, which needs no data on any selected day. 0-3 means 0 to 3 days, 4-7 means 4 to 7 days, and so on.`,
+ dl2=[...Array(N+1)].map((_,d)=>d?`${d} of ${N} days`:`Non AMR: 0 of ${N} days`);
+ return{N,lo,hi,dn,an,ah:['Region','Circle','Substation','Meter','AMR status','Meter status','Gateway','Last data date','Ageing (days)','Ageing bucket'],ar:S.map(x=>[x.r.rg,x.r.ci,x.r.sb,x.r.mt,x.ok?'AMR':'Non AMR',x.r.ms,x.r.gs,x.ld?fd(x.ld):'No data in period',x.a,AL[ab(x.a)]]),
+  day:naMode(all,x=>x.dd,dl2,dl2.map((_,d)=>hx(d,N+1)),N+1,{lead:[['Total meters',tot],['AMR meters',tot-n],['Non AMR meters',n],['AMR %',pc(tot-n,tot)],['Non AMR %',pc(n,tot)]],bl:'meters',ct:'Region-wise meters by days with data',title:`Day-wise reporting status (${fd(D[lo])} to ${fd(last)})`,fn:'meters_daywise',note:dn}),
+  age:naMode(S,x=>ab(x.a),AL,AC,5,{lead:[['Total meters',tot],['Meters with no data on Last date',ns],['% of total meters',pc(ns,tot)],['Non AMR meters (no data in whole range)',n]],bl:'meters with no Last-date data',ct:'Region-wise meters by ageing',title:`Ageing of meters with no data on the Last date (as on ${fd(last)})`,fn:'non_amr_ageing',note:an,tb:1})}}
 function rNA(){const B2=naBuild(),M2=nm?B2.age:B2.day;
- XD={fn:'non_amr_daywise_ageing',title:'Non AMR day-wise and ageing',sub:fsub(1),multi:[B2.day.spec,B2.age.spec],sn:['Day-wise','Ageing'],ds:['Day-wise Data','Ageing Data']};
- $('#nh').textContent=nm?`Non AMR ageing as on ${fd(D[B2.hi])}`:`Non AMR day-wise status: ${fd(D[B2.lo])} to ${fd(D[B2.hi])}`;$('#ns').textContent=nm?B2.an:B2.dn;
+ XD={fn:'daywise_and_ageing',title:'Day-wise reporting status and Non AMR ageing',sub:fsub(1),multi:[B2.day.spec,B2.age.spec],sn:['Day-wise','Ageing'],ds:['Day-wise Data','Ageing Data']};
+ $('#nh').textContent=nm?`Ageing as on ${fd(D[B2.hi])}: meters with no data on the Last date`:`Day-wise reporting status: ${fd(D[B2.lo])} to ${fd(D[B2.hi])}`;$('#ns').textContent=nm?B2.an:B2.dn;
  document.querySelectorAll('#np [data-m]').forEach(b=>b.className='btn'+(+b.dataset.m===nm?'':' alt'));
- $('#nrb').innerHTML=stack(M2.rg,M2.lb,M2.co.map(c=>'#'+c),1);$('#nrtc').classList.toggle('hide',!nm);$('#nrt').innerHTML=nm?M2.tbh:''}
+ $('#nrh').textContent=M2.ct;$('#nrb').innerHTML=stack(M2.rg,M2.lb,M2.co.map(c=>'#'+c),1);$('#nrtc').classList.toggle('hide',!nm);$('#nrt').innerHTML=nm?M2.tbh:''}
 $('#np').addEventListener('click',e=>{const m=e.target.dataset.m;if(m!=null){nm=+m;rNA()}});
 /* ---------- Excel export (native charts, no libraries) ---------- */
 const enc=new TextEncoder(),CRT=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
@@ -215,8 +221,8 @@ function render(){XS=null;const hm=M.length>0,hb=B.length>0;
  [[1,hm],[2,hb],[3,hm&&hb]].forEach(([p,ok])=>{$('#e'+p).classList.toggle('hide',ok);$('#b'+p).classList.toggle('hide',!ok)});
  $('#nd').classList.toggle('hide',!(hm&&pg==1));if(hm&&pg==1){rAMR();if(!$('#np').classList.contains('hide'))rNA()}if(hb&&pg==2)rBIS();if(hm&&hb&&pg==3)rCmb()}
 function go(p){pg=p;document.querySelectorAll('.pg').forEach((e,i)=>e.classList.toggle('hide',i!=p));document.querySelectorAll('#nav button').forEach((b,i)=>b.classList.toggle('on',i==p));render();scrollTo(0,0)}
-$('#nav').onclick=e=>{const p=e.target.dataset.p;if(p!=null)go(+p)};$('#chg').onclick=()=>go(1);$('#bn').onclick=()=>{const h=$('#np').classList.toggle('hide');$('#bn').textContent=(h?'Show':'Hide')+' Non AMR day-wise dashboard';if(!h)rNA()};
+$('#nav').onclick=e=>{const p=e.target.dataset.p;if(p!=null)go(+p)};$('#chg').onclick=()=>go(1);$('#bn').onclick=()=>{const h=$('#np').classList.toggle('hide');$('#bn').textContent=(h?'Show':'Hide')+' day-wise and ageing dashboard';if(!h)rNA()};
 document.addEventListener('click',e=>{const x=e.target.dataset&&e.target.dataset.x;if(!x)return;
- if(x==='nx'){const o=XS;XS=XD;xl();XS=o;return}if(x==='nc')return dl(nm?'non_amr_ageing.csv':'non_amr_daywise.csv',[XD.multi[nm].head,...XD.multi[nm].rows]);if(x==='xl')return xl();if(x==='hr')return hr();if(x[0]==='c')return dl(['','non_amr_meters.csv','bis_not_available_meters.csv'][+x[1]],CSVS[+x[1]]);if(x==='1')dl('non_amr_meters.csv',[['Region','Circle','Substation','Meter','Meter status','Gateway','Sum','Last day'],...amrL().filter(o=>!o.ok).map(amrRow)]);
+ if(x==='nx'){const o=XS;XS=XD;xl();XS=o;return}if(x==='nc')return dl(nm?'non_amr_ageing.csv':'meters_daywise.csv',[XD.multi[nm].head,...XD.multi[nm].rows]);if(x==='xl')return xl();if(x==='hr')return hr();if(x[0]==='c')return dl(['','non_amr_meters.csv','bis_not_available_meters.csv'][+x[1]],CSVS[+x[1]]);if(x==='1')dl('non_amr_meters.csv',[NH,...amrL().filter(o=>!o.ok).map(x=>naRow(x))]);
  if(x==='2')dl('bis_fail_or_missing.csv',[['Region','Circle','Substation','Meter','Overall',...P],...B.filter(flt).filter(o=>o.st!=='Pass').map(bisRow)]);
  if(x==='3')dl('problem_meters.csv',[['Region','Circle','Substation','Meter','Issue','BIS result','Meter status','Gateway'],...W])});
