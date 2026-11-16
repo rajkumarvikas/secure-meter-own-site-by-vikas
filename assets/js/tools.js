@@ -79,7 +79,7 @@ window.TOOLS = [
     short: "Meter Data Hub",
     icon: "database",
     color: "#5c4033",
-    path: "tools/meter-data-hub/index.html",
+    path: "tools/Meter-Data-Hub/index.html",
     description: "Mark daily attendance, see the monthly grid with totals, export to Excel or CSV.",
     worksWith: "Employee list (CSV, optional)",
     button: "Open Attendance"
