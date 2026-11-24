@@ -69,9 +69,9 @@ window.TOOLS = [
     icon: "file",
     color: "#7a5ccf",
     path: "tools/BIS_Invoice/index.html",
-    description: "Mark daily attendance, see the monthly grid with totals, export to Excel or CSV.",
+    description: "Upload the BIS data and generate the invoice PDF and updated Excel.",
     worksWith: "Employee list (CSV, optional)",
-    button: "Open Attendance"
+    button: "Open Invoice"
   },
    {
     id: "Meter Data Hub",
@@ -80,9 +80,20 @@ window.TOOLS = [
     icon: "database",
     color: "#5c4033",
     path: "tools/Meter-Data-Hub/index.html",
-    description: "Mark daily attendance, see the monthly grid with totals, export to Excel or CSV.",
+    description: "Upload meter data and generate reports.",
     worksWith: "Employee list (CSV, optional)",
-    button: "Open Attendance"
+    button: "Open Meter Data Hub"
+  },
+   {
+    id: "Checklist",
+    name: "Checklist",
+    short: "Checklist",
+    icon: "check-circle",
+    color: "#28a745",
+    path: "tools/Check_list/index.html",
+    description: "Create and manage checklists for various tasks.",
+    worksWith: "Employee list (CSV, optional)",
+    button: "Open Checklist"
   },
   {
     id: "attendance",
@@ -97,3 +108,9 @@ window.TOOLS = [
   },
 
 ];
+
+
+
+// git add .
+// git commit -m "Update website"
+// git push origin main
