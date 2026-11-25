@@ -25,16 +25,19 @@
   <div class="grid" id="stats"></div>
   <p style="margin:16px 0 8px"><button class="p" id="dl">Export 1983 file (.xlsx)</button></p>
   <p class="note" id="dlmsg"></p>
-  <p class="note">In “Old Uninv” only <b>#N/A</b> cells in AB:AI are changed. In “Rectification Plan” the columns Visited Yesterday, Cumulative Visit, Target Pending and the daily date columns are recalculated from the supervisor visits in Old Uninv. Everything else (pivots, charts, slicers, other sheets) stays as it was.</p>
+  <p class="note">In “Old Uninv” and “New Installation” the supervisor / remark / visit date / Ewatch columns fill only <b>#N/A</b> cells. The MDAS date and MDAS source columns work like a VLOOKUP: if the meter is in the MDAS file they are <b>replaced</b> with Energy Reading Date (V) and Reading Source (W), even if already filled; meters not in the MDAS file are left as they are. Columns are found by header name. In “Rectification Plan” the columns Visited Yesterday, Cumulative Visit, Target Pending and the daily date columns are recalculated from the supervisor visits in Old Uninv. Everything else (pivots, charts, slicers, other sheets) stays as it was.</p>
   <h3 style="margin:16px 0 6px;font-size:15px">Rectification Plan (updated from Old Uninv)</h3>
   <p class="note" id="pnote"></p>
   <div class="wrap"><table id="ptbl"></table></div>
+  <h3 style="margin:16px 0 6px;font-size:15px">Columns detected (by header name)</h3>
+  <p class="note" id="mapnote" style="white-space:pre-wrap"></p>
   <h3 style="margin:16px 0 6px;font-size:15px">Cells that were filled</h3>
   <div class="wrap"><table id="tbl"></table></div>
 </div>
 </main>
 
 <script src="../../vendor/jszip.min.js"></script>
+<script>window.JSZip||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"><\/script>')</script>
 <script src="app.js"></script>
 <script src="../../assets/js/config.js"></script>
 <script src="../../assets/js/drive-picker.js"></script>

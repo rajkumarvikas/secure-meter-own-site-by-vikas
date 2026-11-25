@@ -8,11 +8,18 @@ const unesc=s=>s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"'
 const xa=(tag,n)=>{const m=tag.match(new RegExp('\\b'+n+'="([^"]*)"'));return m?m[1]:null};
 
 function parseCSV(t){
+  /* Lenient CSV: a quote closes a quoted field only when it is followed by , / newline / end of text, so stray
+     quotes inside a field (e.g. <a href="https://..."> image links in the FFS exports) cannot swallow later rows. */
   if(t.charCodeAt(0)===65279)t=t.slice(1);
   const out=[];let r=[],f='',q=false;
   for(let i=0;i<t.length;i++){const c=t[i];
-    if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
-    else if(c==='"')q=true;
+    if(q){
+      if(c==='"'){const n=t[i+1];
+        if(n==='"'){f+='"';i++}
+        else if(n===undefined||n===','||n==='\n'||n==='\r')q=false;
+        else f+='"'}
+      else f+=c}
+    else if(c==='"'&&f==='')q=true;
     else if(c===','){r.push(f);f=''}
     else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;r.push(f);f='';out.push(r);r=[]}
     else f+=c}
@@ -99,6 +106,8 @@ function serial(v){
   if(typeof v==='number')return v>20000?v:null;
   v=S(v);let m;
   if(m=v.match(/^(\d{4})-(\d\d)-(\d\d)(?:[ T](\d\d):(\d\d)(?::(\d\d))?)?/))return(Date.UTC(+m[1],m[2]-1,+m[3],+(m[4]||0),+(m[5]||0),+(m[6]||0))-EP)/864e5;
+  if(m=v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})(?:[ T,]+(\d{1,2}):(\d\d)(?::(\d\d))?)?/))
+    return(Date.UTC(+m[3],m[2]-1,+m[1],+(m[4]||0),+(m[5]||0),+(m[6]||0))-EP)/864e5;
   if(m=v.match(/^(\d{1,2})-([A-Za-z]{3})[a-z]*-(\d{4})/)){
     const mo='jan feb mar apr may jun jul aug sep oct nov dec'.split(' ').indexOf(m[2].toLowerCase());
     if(mo>=0)return(Date.UTC(+m[3],mo,+m[1])-EP)/864e5}
@@ -121,7 +130,7 @@ const words=s=>String(s||'').toLowerCase().replace(/[^a-z ]/g,' ').split(/\s+/).
 const simW=(a,b)=>a===b||(Math.min(a.length,b.length)>=4&&(a.startsWith(b)||b.startsWith(a)))||(Math.min(a.length,b.length)>=5&&lev(a,b)<=2);
 const circKey=h=>words(h).filter(w=>w!=='circle'&&w!=='r'&&w!=='division').join(' ');
 
-function updatePlan(planXml,ouXml,sis){
+function updatePlan(planXml,ouXml,sis,oc){
   const cellVal=(row,col,rn)=>{
     const m=row.match(new RegExp('<c r="'+col+rn+'"([^>]*?)(?:/>|>([\\s\\S]*?)</c>)'));
     if(!m||!m[2])return null;const a=m[1];
@@ -142,9 +151,9 @@ function updatePlan(planXml,ouXml,sis){
   // visits from Old Uninv
   const visits=[];let maxD=0;
   ouXml.replace(/<row r="(\d+)"[^>]*?(?:\/>|>[\s\S]*?<\/row>)/g,(row,rn)=>{rn=+rn;if(rn===1)return row;
-    const ab=cellVal(row,'AB',rn);if(typeof ab!=='string'||!ab)return row;
-    const ae=cellVal(row,'AE',rn);const d=typeof ae==='number'?Math.floor(ae):null;if(d&&d>maxD)maxD=d;
-    visits.push({ab:words(ab),circ:circKey(cellVal(row,'H',rn)),d});return row});
+    const ab=cellVal(row,oc.ab,rn);if(typeof ab!=='string'||!ab)return row;
+    const ae=cellVal(row,oc.ae,rn);const d=typeof ae==='number'?Math.floor(ae):null;if(d&&d>maxD)maxD=d;
+    visits.push({ab:words(ab),circ:circKey(cellVal(row,oc.h,rn)),d});return row});
   const un={};
   visits.forEach(v=>{
     let c=plist.filter(p=>p.tok.some(t=>t.every(w=>v.ab.some(x=>simW(w,x)))));
@@ -178,79 +187,184 @@ function updatePlan(planXml,ouXml,sis){
   return{xml,out,maxD,un,assigned:visits.length-Object.values(un).reduce((a,b)=>a+b,0),visited:visits.length};
 }
 
+/* Sheets in which #N/A cells are filled. Columns are found by HEADER NAME (row 1), so
+   Old Uninv and New Installation may have the same headers at different column letters.
+   Header text is compared ignoring case, spaces and punctuation; if a header repeats, the first one is used. */
+const nk=t=>String(t||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const HEAD={
+  m:['metersrno','metersr','meterno','meterserialno'],
+  u:['revisitedbysupervisor'],
+  s:['ffsremsrk','ffsremark'],
+  t:['subremark'],
+  d:['visitdate'],
+  ew:['ewatchamrstatus'],
+  md:['mdasamrdate'],
+  ms:['mdassource'],
+  circ:['circlename']
+};
+const FILL=[{name:'Old Uninv',req:1},{name:'New Installation',req:0}];
+function headerMap(xml,sis){
+  const hm={};
+  const r1=(xml.match(/<row r="1"[^>]*?(?:\/>|>[\s\S]*?<\/row>)/)||[''])[0];
+  r1.replace(/<c r="([A-Z]+)1"([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g,(m,col,a,b)=>{
+    b=b||'';let v=null;
+    if(/ t="s"/.test(a)){const x=b.match(/<v>([^<]*)<\/v>/);if(x)v=sis[+x[1]]}
+    else if(/ t="inlineStr"/.test(a))v=unesc(b.replace(/<[^>]+>/g,''));
+    else{const x=b.match(/<v>([^<]*)<\/v>/);if(x)v=x[1]}
+    const k=nk(v);if(k)(hm[k]=hm[k]||[]).push(col);return m});
+  return hm;
+}
+function resolveCols(hm){
+  const C={},miss=[];
+  for(const f in HEAD){
+    const hit=HEAD[f].map(h=>hm[h]&&hm[h][0]).filter(Boolean).sort((a,b)=>ci(a)-ci(b))[0];
+    if(hit)C[f]=hit;else miss.push(f);
+  }
+  return{C,miss};
+}
+const FNAME={m:'Meter',u:'Revisited by supervisor',s:'FFS remsrk',t:'sub remark',d:'Visit date',ew:'E watch AMR status',md:'MDAS AMR date',ms:'Mdas Source',circ:'Circle Name'};
+const sheetPath=(wbx,rels,name)=>{
+  const sh=(wbx.match(/<sheet\b[^>]*>/g)||[]).find(t=>unesc(xa(t,'name')||'').trim()===name);
+  if(!sh)return null;
+  const rt=(rels.match(/<Relationship\b[^>]*>/g)||[]).find(t=>xa(t,'Id')===xa(sh,'r:id'));
+  return rt?'xl/'+xa(rt,'Target').replace(/^\/?(xl\/)?/,''):null;
+};
+function fillSheet(xml,C,rel,ew,md,sis,label){
+  const cols=['u','s','t','d','ew','md','ms'].map(k=>C[k]).filter(Boolean);
+  const naRe=new RegExp('<c r="(?:'+cols.join('|')+')\\d+"[^>]*t="e"[^>]*><v>#N/A</v></c>','g');
+  const before=(xml.match(naRe)||[]).length;
+  const changes=[];let total=0,mdHit=0;
+  xml=xml.replace(/<row r="(\d+)"[^>]*?(?:\/>|>[\s\S]*?<\/row>)/g,(row,rn)=>{
+    rn=+rn;if(rn===1)return row;
+    const b=C.m&&row.match(new RegExp('<c r="'+C.m+rn+'"[^>]*>(?:<v>([^<]*)</v>)?'));
+    if(!b||b[1]==null)return row;
+    const meter=S(/ t="s"/.test(b[0])?sis[+b[1]]:b[1]);if(!meter||meter[0]==='#')return row;total++;
+    const put=(col,val,num,src)=>{
+      if(!col)return;
+      const re=new RegExp('<c r="'+col+rn+'"((?: s="\\d+")?) t="e"><v>#N/A</v></c>');
+      if(!re.test(row))return;
+      row=row.replace(re,(m,st)=>num?'<c r="'+col+rn+'"'+st+'><v>'+val+'</v></c>':'<c r="'+col+rn+'"'+st+' t="inlineStr"><is><t>'+esc(val)+'</t></is></c>');
+      changes.push([label,rn,meter,col,num?fmt(val):val,src]);
+    };
+    const upd=(col,val,num)=>{
+      if(!col)return;
+      const re=new RegExp('<c r="'+col+rn+'"([^>]*?)(?:/>|>([\\s\\S]*?)</c>)');
+      const m=row.match(re);if(!m)return;
+      const at=m[1],inner=m[2]||'',st=(at.match(/ s="\d+"/)||[''])[0];
+      let o=null;const vv=inner.match(/<v>([^<]*)<\/v>/);
+      if(/ t="e"/.test(at))o='#N/A';
+      else if(/ t="s"/.test(at)&&vv)o=sis[+vv[1]];
+      else if(/ t="inlineStr"/.test(at))o=unesc(inner.replace(/<[^>]+>/g,''));
+      else if(/ t="str"/.test(at)&&vv)o=unesc(vv[1]);
+      else if(vv&&!/ t="/.test(at))o=+vv[1];
+      if(num?(typeof o==='number'&&o===val):((o==null?'':String(o))===val))return;
+      const cell=num?'<c r="'+col+rn+'"'+st+'><v>'+val+'</v></c>'
+        :val===''?'<c r="'+col+rn+'"'+st+'/>'
+        :'<c r="'+col+rn+'"'+st+' t="inlineStr"><is><t>'+esc(val)+'</t></is></c>';
+      row=row.replace(re,()=>cell);
+      changes.push([label,rn,meter,col,num?(val>20000?fmt(val):String(val)):(val===''?'(blank)':val),(col===C.ew?'ewatch':'mdas'),o==null?'':(typeof o==='number'?(o>20000?fmt(o):String(o)):o)]);
+    };
+    const src=['inst','brk','rep'].find(k=>rel[k]&&rel[k][meter]);
+    if(src){const v=rel[src][meter];
+      put(C.u,v[0],0,src);put(C.s,v[1],0,src);put(C.t,v[2],0,src);
+      if(v[3]!=null)put(C.d,v[3],1,src)}
+    /* E watch AMR status: VLOOKUP on the meter against ewatch column A - the cell is replaced with that meter number. */
+    if(ew.has(meter))upd(C.ew,meter,0);
+    /* MDAS date / source: like a VLOOKUP on the meter, the cell is REPLACED with the MDAS value
+       (Energy Reading Date -> whole day, blank -> 0; Reading Source), whatever it held before.
+       Meters that are not in the MDAS file are left untouched. */
+    if(md[meter]){mdHit++;const v=md[meter];
+      upd(C.md,v[0]==null?0:v[0],1);upd(C.ms,v[1]||'',0)}
+    return row;
+  });
+  return{xml,changes,total,mdHit,before,after:(xml.match(naRe)||[]).length};
+}
+
+/* Columns of the Installation / Breakdown / Repair CSVs are found by header name (letters are only a fallback). */
+const HN={
+  inst:{m:['oldmeterserialno'],u:['taskdoneby'],s:['servicename'],t:['jobtype'],d:['taskenddate']},
+  brk:{m:['meterserialno'],u:['fieldusername'],s:['finalremarksfornonamr'],t:['remark'],d:['smtaskendtime']}
+};
+HN.rep=HN.inst;
+const LET={inst:{m:'AV',u:'V',s:'E',t:'F',d:'AN'},brk:{m:'J',u:'U',s:'AY',t:'AK',d:'R'},rep:{m:'AV',u:'V',s:'E',t:'F',d:'AN'}};
+const SFN={m:'Meter',u:'Supervisor',s:'FFS remark',t:'Sub remark',d:'Date'};
+const colL=n=>{let t='';n++;while(n>0){const m=(n-1)%26;t=String.fromCharCode(65+m)+t;n=Math.floor((n-1)/26)}return t};
+
 async function runJob(F,say){
-  const rel={},cnt={};
-  const load=async(k,c)=>{
+  const rel={},cnt={hdr:[],src:[]};
+  const load=async(k)=>{
     if(!F[k])return;
     say('Reading '+F[k].name+' …');
-    const want=new Set(Object.values(c));
-    const r=await tableRows(F[k],want);let n=0;
-    r.forEach(x=>{const m=S(x[c.m]);if(!m)return;n++;
-      const d=serial(x[c.d]);
-      (rel[k]=rel[k]||{})[m]=[S(x[c.u]),S(x[c.s]),S(x[c.t]),d==null?null:Math.floor(d)]});
+    const c=LET[k],hn=HN[k],idx={};let rows;
+    if(/\.csv$/i.test(F[k].name)){
+      const all=parseCSV(new TextDecoder('utf-8').decode(await F[k].arrayBuffer()));
+      const hm={};(all[0]||[]).forEach((h,i)=>{const z=nk(h);if(z&&!(z in hm))hm[z]=i});
+      for(const f in c){const hit=hn[f].map(z=>hm[z]).find(i=>i!=null);
+        if(hit!=null)idx[f]=hit;
+        else{idx[f]=ci(c[f]);cnt.hdr.push(F[k].name+': header for "'+SFN[f]+'" not found, used column '+c[f])}}
+      rows=all.slice(1);
+    }else{
+      for(const f in c)idx[f]=ci(c[f]);
+      rows=await tableRows(F[k],new Set(Object.values(idx)));
+    }
+    cnt.src.push(F[k].name+': '+Object.keys(c).map(f=>SFN[f]+' = '+colL(idx[f])).join(' · '));
+    let n=0;
+    rows.forEach(x=>{const m=S(x[idx.m]);if(!m)return;n++;
+      const d=serial(x[idx.d]);
+      (rel[k]=rel[k]||{})[m]=[S(x[idx.u]),S(x[idx.s]),S(x[idx.t]),d==null?null:Math.floor(d)]});
     cnt[k]=n;
   };
-  await load('inst',{m:ci('AV'),u:ci('V'),s:ci('E'),t:ci('F'),d:ci('AN')});
-  await load('brk',{m:ci('J'),u:ci('U'),s:ci('AX'),t:ci('AK'),d:ci('R')});
-  await load('rep',{m:ci('AV'),u:ci('V'),s:ci('E'),t:ci('F'),d:ci('AN')});
+  await load('inst');
+  await load('brk');
+  await load('rep');
   say('Reading '+F.ew.name+' …');
   const ew=new Set();(await tableRows(F.ew,new Set([0]))).forEach(x=>{const m=S(x[0]);if(m)ew.add(m)});cnt.ew=ew.size;
   say('Reading '+F.md.name+' (large file, please wait) …');
-  const md={};
+  const md={};cnt.mdBad=0;cnt.mdRaw=[];
   (await tableRows(F.md,new Set([ci('J'),ci('V'),ci('W')]))).forEach(x=>{
-    const m=S(x[ci('J')]);if(m&&!(m in md))md[m]=[serial(x[ci('V')]),S(x[ci('W')])]});
+    const m=S(x[ci('J')]);if(!m)return;
+    const raw=x[ci('V')],d=serial(raw);
+    if(d==null&&S(raw)!==''){cnt.mdBad++;if(cnt.mdRaw.length<3)cnt.mdRaw.push(S(raw))}
+    const cur=md[m];
+    if(!cur||(d!=null&&(cur[0]==null||d>cur[0])))md[m]=[d==null?null:Math.floor(d),S(x[ci('W')])]});
   cnt.md=Object.keys(md).length;
 
   say('Opening the 1983 workbook …');
   const zip=await JSZip.loadAsync(await F.main.arrayBuffer());
   const wbx=await zip.file('xl/workbook.xml').async('string');
-  const sh=(wbx.match(/<sheet\b[^>]*>/g)||[]).find(t=>unesc(xa(t,'name')||'').trim()===SHEET);
-  if(!sh)throw new Error('Sheet "'+SHEET+'" was not found in the 1983 file');
-  const rid=xa(sh,'r:id');
   const rels=await zip.file('xl/_rels/workbook.xml.rels').async('string');
-  const rt=(rels.match(/<Relationship\b[^>]*>/g)||[]).find(t=>xa(t,'Id')===rid);
-  const path='xl/'+xa(rt,'Target').replace(/^\/?(xl\/)?/,'');
   const sst=await zip.file('xl/sharedStrings.xml').async('string');
   const sis=(sst.match(/<si>[\s\S]*?<\/si>|<si\/>/g)||[]).map(x=>unesc(x.replace(/<[^>]+>/g,'')));
-  let xml=await zip.file(path).async('string');
-  const naRe=/<c r="A[B-I]\d+"[^>]*t="e"[^>]*><v>#N\/A<\/v><\/c>/g;
-  const before=(xml.match(naRe)||[]).length;
-  const changes=[];let total=0;
-  say('Filling #N/A cells …');
-  xml=xml.replace(/<row r="(\d+)"[^>]*?(?:\/>|>[\s\S]*?<\/row>)/g,(row,rn)=>{
-    rn=+rn;if(rn===1)return row;
-    const b=row.match(new RegExp('<c r="B'+rn+'"[^>]*>(?:<v>([^<]*)</v>)?'));
-    if(!b||b[1]==null)return row;
-    const meter=S(/ t="s"/.test(b[0])?sis[+b[1]]:b[1]);if(!meter)return row;total++;
-    const put=(col,val,num,src)=>{
-      const re=new RegExp('<c r="'+col+rn+'"((?: s="\\d+")?) t="e"><v>#N/A</v></c>');
-      if(!re.test(row))return;
-      row=row.replace(re,(m,st)=>num?'<c r="'+col+rn+'"'+st+'><v>'+val+'</v></c>':'<c r="'+col+rn+'"'+st+' t="inlineStr"><is><t>'+esc(val)+'</t></is></c>');
-      changes.push([rn,meter,col,num?fmt(val):val,src]);
-    };
-    const src=['inst','brk','rep'].find(k=>rel[k]&&rel[k][meter]);
-    if(src){const v=rel[src][meter];
-      put('AB',v[0],0,src);put('AC',v[1],0,src);put('AD',v[2],0,src);
-      if(v[3]!=null)put('AE',v[3],1,src)}
-    if(ew.has(meter))put('AF',meter,0,'ewatch');
-    if(md[meter]){const v=md[meter];put('AG',meter,0,'mdas');
-      if(v[0]!=null)put('AH',v[0],1,'mdas');put('AI',v[1],0,'mdas')}
-    return row;
-  });
-  const after=(xml.match(naRe)||[]).length;
-  zip.file(path,xml);
+  const sheets=[],warn=cnt.hdr.slice();let xml=null,oc=null;
+  if(cnt.mdBad)warn.push('MDAS file: '+cnt.mdBad+' date value(s) could not be read, e.g. '+cnt.mdRaw.map(v=>'"'+v+'"').join(', ')+' (date left blank for those)');
+  for(const cfg of FILL){
+    const path=sheetPath(wbx,rels,cfg.name);
+    if(!path){if(cfg.req)throw new Error('Sheet "'+cfg.name+'" was not found in the 1983 file');sheets.push({label:cfg.name,missing:1,changes:[],total:0,before:0,after:0,map:''});continue}
+    say('Filling #N/A cells in '+cfg.name+' …');await tick();
+    const x0=await zip.file(path).async('string');
+    const {C,miss}=resolveCols(headerMap(x0,sis));
+    if(!C.m){if(cfg.req)throw new Error('"'+cfg.name+'": meter column header (e.g. "Meter Sr. No.") not found in row 1');warn.push(cfg.name+': meter column not found, sheet skipped');sheets.push({label:cfg.name,missing:1,changes:[],total:0,before:0,after:0,map:''});continue}
+    if(miss.filter(f=>f!=='circ').length)warn.push(cfg.name+': header not found for '+miss.filter(f=>f!=='circ').map(f=>FNAME[f]).join(', ')+' (those columns are not filled)');
+    const r=fillSheet(x0,C,rel,ew,md,sis,cfg.name);
+    zip.file(path,r.xml);
+    sheets.push({label:cfg.name,changes:r.changes,total:r.total,mdHit:r.mdHit,before:r.before,after:r.after,
+      map:Object.keys(HEAD).filter(f=>C[f]).map(f=>FNAME[f]+' = '+C[f]).join(' · ')});
+    if(cfg.name===SHEET){xml=r.xml;
+      oc={ab:C.u,ae:C.d,h:C.circ};
+      if(!oc.ab||!oc.ae||!oc.h)warn.push('Old Uninv: supervisor / visit date / circle header missing, Rectification Plan may be wrong')}
+  }
   say('Updating the Rectification Plan …');
   const prt=(wbx.match(/<sheet\b[^>]*>/g)||[]).find(t=>unesc(xa(t,'name')||'').trim()==='Rectification Plan');
   let plan=null;
   if(prt){
     const pr=(rels.match(/<Relationship\b[^>]*>/g)||[]).find(t=>xa(t,'Id')===xa(prt,'r:id'));
     const pp='xl/'+xa(pr,'Target').replace(/^\/?(xl\/)?/,'');
-    plan=updatePlan(await zip.file(pp).async('string'),xml,sis);
+    plan=updatePlan(await zip.file(pp).async('string'),xml,sis,{ab:oc.ab||'AB',ae:oc.ae||'AE',h:oc.h||'H'});
     zip.file(pp,plan.xml);
   }
   say('Building the updated .xlsx …');
   const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE'});
-  return{blob,changes,cnt,total,before,after,plan};
+  return{blob,sheets,cnt,plan,warn};
 }
 
 const SLOTS=[
@@ -297,18 +411,23 @@ $('go').onclick=async()=>{
   try{
     const r=await runJob(F,t=>{log(t);return tick()});
     outBlob=r.blob;
-    const c=r.cnt,st=[['Meters in sheet',r.total],['#N/A before (AB:AI)',r.before],['Cells filled',r.changes.length],['#N/A remaining',r.after],
-      ['Installation rows',c.inst==null?'skipped':c.inst],['Breakdown rows',c.brk==null?'skipped':c.brk],['Repair rows',c.rep==null?'skipped':c.rep],['Ewatch meters',c.ew],['MDAS meters',c.md]];
+    const c=r.cnt,all=[].concat(...r.sheets.map(x=>x.changes));
+    const st=[];
+    r.sheets.forEach(x=>{
+      if(x.missing){st.push([x.label+': sheet not found',0]);return}
+      st.push([x.label+': meters',x.total],[x.label+': found in MDAS',x.mdHit],[x.label+': #N/A before',x.before],[x.label+': cells changed',x.changes.length],[x.label+': #N/A remaining',x.after])});
+    st.push(['Installation rows',c.inst==null?'skipped':c.inst],['Breakdown rows',c.brk==null?'skipped':c.brk],['Repair rows',c.rep==null?'skipped':c.rep],['Ewatch meters',c.ew],['MDAS meters',c.md]);
     $('stats').innerHTML=st.map(s=>'<div class="st"><div>'+s[1]+'</div><small>'+s[0]+'</small></div>').join('');
-    $('tbl').innerHTML='<tr><th>Row</th><th>Meter</th><th>Column</th><th>New value</th><th>Source</th></tr>'+
-      (r.changes.length?r.changes.slice(0,300).map(x=>'<tr>'+x.map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="5">No #N/A cell matched.</td></tr>');
+    $('tbl').innerHTML='<tr><th>Sheet</th><th>Row</th><th>Meter</th><th>Column</th><th>New value</th><th>Source</th><th>Old value</th></tr>'+
+      (all.length?all.slice(0,300).map(x=>'<tr>'+x.map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="7">Nothing changed.</td></tr>');
     const P=r.plan;
     if(P){
       $('pnote').textContent='Report date = latest visit date in Old Uninv ('+fmt(P.maxD)+'). '+P.assigned+' of '+P.visited+' supervisor visits were assigned to a plan row'+(Object.keys(P.un).length?'; not assigned: '+Object.entries(P.un).map(e=>e[0]+' ('+e[1]+')').join(', '):'')+'.';
       $('ptbl').innerHTML='<tr><th>Supervisor</th><th>Circle</th><th>Cumulative (old)</th><th>Cumulative (new)</th><th>Visited on report date</th><th>Target pending</th></tr>'+
         P.out.map(x=>'<tr>'+x.map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('');
     }else{$('pnote').textContent='Sheet “Rectification Plan” was not found, so it was not updated.';$('ptbl').innerHTML=''}
-    $('res').hidden=false;log('Done ✓');
+    $('mapnote').textContent=r.cnt.src.concat(r.sheets.filter(x=>x.map).map(x=>x.label+': '+x.map)).join('\n')+(r.warn.length?'\n⚠ '+r.warn.join('\n⚠ '):'');
+    $('res').hidden=false;log('Done ✓'+(r.warn.length?' (see warnings below)':''));
   }catch(e){log('Error: '+(e&&e.message||e))}
   $('go').disabled=!ready();
 };
